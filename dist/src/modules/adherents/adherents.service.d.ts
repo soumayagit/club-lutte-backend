@@ -1,0 +1,135 @@
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreateAdherentDto, UpdateAdherentDto, UpdateStatusDto, DraftAdherentDto } from './dto/adherent.dto';
+interface CurrentUser {
+    id: string;
+    email: string;
+    role: string;
+}
+export declare class AdherentsService {
+    private prisma;
+    constructor(prisma: PrismaService);
+    private computeIsMinor;
+    private handlePrismaError;
+    create(dto: CreateAdherentDto, currentUser: CurrentUser): Promise<{
+        firstName: string;
+        lastName: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        birthDate: Date;
+        ageCategory: string | null;
+        weightKg: number | null;
+        licenceFFLDA: string | null;
+        tuteurId: string | null;
+        status: string;
+        userId: string | null;
+        isMinor: boolean;
+    }>;
+    createDraft(dto: DraftAdherentDto, currentUser: CurrentUser): Promise<{
+        firstName: string;
+        lastName: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        birthDate: Date;
+        ageCategory: string | null;
+        weightKg: number | null;
+        licenceFFLDA: string | null;
+        tuteurId: string | null;
+        status: string;
+        userId: string | null;
+        isMinor: boolean;
+    }>;
+    saveDraft(id: string, dto: DraftAdherentDto, currentUser: CurrentUser): Promise<{
+        firstName: string;
+        lastName: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        birthDate: Date;
+        ageCategory: string | null;
+        weightKg: number | null;
+        licenceFFLDA: string | null;
+        tuteurId: string | null;
+        status: string;
+        userId: string | null;
+        isMinor: boolean;
+    }>;
+    findAll(currentUser: CurrentUser): Promise<{
+        firstName: string;
+        lastName: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        birthDate: Date;
+        ageCategory: string | null;
+        weightKg: number | null;
+        licenceFFLDA: string | null;
+        tuteurId: string | null;
+        status: string;
+        userId: string | null;
+        isMinor: boolean;
+    }[]>;
+    findOne(id: string, currentUser: CurrentUser): Promise<{
+        firstName: string;
+        lastName: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        birthDate: Date;
+        ageCategory: string | null;
+        weightKg: number | null;
+        licenceFFLDA: string | null;
+        tuteurId: string | null;
+        status: string;
+        userId: string | null;
+        isMinor: boolean;
+    }>;
+    update(id: string, dto: UpdateAdherentDto, currentUser: CurrentUser): Promise<{
+        firstName: string;
+        lastName: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        birthDate: Date;
+        ageCategory: string | null;
+        weightKg: number | null;
+        licenceFFLDA: string | null;
+        tuteurId: string | null;
+        status: string;
+        userId: string | null;
+        isMinor: boolean;
+    }>;
+    updateStatus(id: string, dto: UpdateStatusDto, currentUser: CurrentUser): Promise<{
+        firstName: string;
+        lastName: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        birthDate: Date;
+        ageCategory: string | null;
+        weightKg: number | null;
+        licenceFFLDA: string | null;
+        tuteurId: string | null;
+        status: string;
+        userId: string | null;
+        isMinor: boolean;
+    }>;
+    remove(id: string, currentUser: CurrentUser): Promise<{
+        firstName: string;
+        lastName: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        birthDate: Date;
+        ageCategory: string | null;
+        weightKg: number | null;
+        licenceFFLDA: string | null;
+        tuteurId: string | null;
+        status: string;
+        userId: string | null;
+        isMinor: boolean;
+    }>;
+    private assertOwnership;
+}
+export {};

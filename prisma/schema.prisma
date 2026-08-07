@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADHERENT
+  TUTEUR
+  COACH
+  BUREAU
+  TRESORIER
+  SECRETAIRE
+  ADMIN
+}
+
+model User {
+  id                    String    @id @default(uuid())
+  email                 String    @unique
+  passwordHash          String
+  firstName             String
+  lastName              String
+  phone                 String?
+  role                  Role      @default(ADHERENT)
+  isActive              Boolean   @default(true)
+  refreshToken          String?
+  resetPasswordToken    String?
+  resetPasswordExpires  DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  adherentsAsTuteur Adherent[] @relation("TuteurAdherents")
+  adherentProfile   Adherent?  @relation("CompteAdherent")
+
+  @@map("users")
+}
+
+model Adherent {
+  id            String   @id @default(uuid())
+  firstName     String
+  lastName      String
+  birthDate     DateTime
+  isMinor       Boolean  @default(false)
+  licenceFFLDA  String?  @unique
+  ageCategory   String?
+  weightKg      Float?
+  status        String   @default("DRAFT")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  userId        String?  @unique
+  user          User?    @relation("CompteAdherent", fields: [userId], references: [id])
+
+  tuteurId      String?
+  tuteur        User?    @relation("TuteurAdherents", fields: [tuteurId], references: [id])
+  documents     Document[]
+
+  @@map("adherents")
+}
+model Document {
+  id            String   @id @default(uuid())
+  type          String
+  fileUrl       String
+  status        String   @default("PENDING")
+  extractedData Json?
+  createdAt     DateTime @default(now())
+
+  adherentId    String
+  adherent      Adherent @relation(fields: [adherentId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
