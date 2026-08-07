@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-   "build": "prisma generate && npx tsc -p tsconfig.build.json && ls -la dist || echo DOSSIER_DIST_INTROUVABLE",    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+   "build": "prisma generate && nest build",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
