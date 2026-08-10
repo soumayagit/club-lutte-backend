@@ -1,26 +1,23 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AdherentsService } from './adherents.service';
 import { CreateAdherentDto, UpdateAdherentDto, UpdateStatusDto, DraftAdherentDto } from './dto/adherent.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../common/guards/roles.guard';
 
 @ApiTags('adherents')
 @ApiBearerAuth()
-@Controller('adherents')
+@Controller('clubs/:clubId/adherents')
 export class AdherentsController {
   constructor(private adherentsService: AdherentsService) {}
 
   @Post()
-  create(@Body() dto: CreateAdherentDto, @CurrentUser() user: any) {
-    return this.adherentsService.create(dto, user);
+  create(@Param('clubId') clubId: string, @Body() dto: CreateAdherentDto, @CurrentUser() user: any) {
+    return this.adherentsService.create(clubId, dto, user);
   }
 
-  // ── Brouillon ────────────────────────────────────────────────────────────
   @Post('draft')
-  createDraft(@Body() dto: DraftAdherentDto, @CurrentUser() user: any) {
-    return this.adherentsService.createDraft(dto, user);
+  createDraft(@Param('clubId') clubId: string, @Body() dto: DraftAdherentDto, @CurrentUser() user: any) {
+    return this.adherentsService.createDraft(clubId, dto, user);
   }
 
   @Patch(':id/draft')
@@ -29,8 +26,8 @@ export class AdherentsController {
   }
 
   @Get()
-  findAll(@CurrentUser() user: any) {
-    return this.adherentsService.findAll(user);
+  findAll(@Param('clubId') clubId: string, @CurrentUser() user: any) {
+    return this.adherentsService.findAll(clubId, user);
   }
 
   @Get(':id')
@@ -44,15 +41,11 @@ export class AdherentsController {
   }
 
   @Patch(':id/status')
-  @UseGuards(RolesGuard)
-  @Roles('BUREAU', 'ADMIN', 'SECRETAIRE')
   updateStatus(@Param('id') id: string, @Body() dto: UpdateStatusDto, @CurrentUser() user: any) {
     return this.adherentsService.updateStatus(id, dto, user);
   }
 
   @Delete(':id')
-  @UseGuards(RolesGuard)
-  @Roles('BUREAU', 'ADMIN')
   remove(@Param('id') id: string, @CurrentUser() user: any) {
     return this.adherentsService.remove(id, user);
   }

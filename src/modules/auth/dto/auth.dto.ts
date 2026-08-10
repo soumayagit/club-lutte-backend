@@ -1,5 +1,4 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsEnum } from 'class-validator';
-import { Role } from '@prisma/client';
+import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
@@ -19,9 +18,8 @@ export class RegisterDto {
   @IsString()
   phone?: string;
 
-  @IsOptional()
-  @IsEnum(Role)
-  role?: Role;
+  // Plus de "role" ici — le rôle se définit désormais au niveau du club (ClubMembership),
+  // pas à l'inscription globale du compte.
 }
 
 export class LoginDto {

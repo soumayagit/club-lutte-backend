@@ -9,7 +9,6 @@ import {
   UploadedFile,
   UseInterceptors,
   BadRequestException,
-  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -18,8 +17,6 @@ import { ApiTags, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { DocumentsService } from './documents.service';
 import { UploadDocumentDto } from './dto/document.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Roles } from '../../common/decorators/roles.decorator';
-import { RolesGuard } from '../../common/guards/roles.guard';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'application/pdf'];
 
@@ -67,9 +64,9 @@ export class DocumentsController {
     return this.documentsService.findByAdherent(adherentId, user);
   }
 
+  // Le rôle (BUREAU/ADMIN/SECRETAIRE) est maintenant vérifié DANS le service,
+  // via le club de l'adhérent concerné — plus besoin de @UseGuards(RolesGuard) ici.
   @Patch(':documentId/status')
-  @UseGuards(RolesGuard)
-  @Roles('BUREAU', 'ADMIN', 'SECRETAIRE')
   updateStatus(
     @Param('documentId') documentId: string,
     @Body('status') status: string,

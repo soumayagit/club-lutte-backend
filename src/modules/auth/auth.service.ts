@@ -14,8 +14,10 @@ export class AuthService {
     private mailService: MailService,
   ) {}
 
-  private async signTokens(userId: string, email: string, role: string) {
-    const payload = { sub: userId, email, role };
+  // ── Le JWT ne contient plus de rôle global — juste l'identité ─────────────
+  // Le rôle se vérifie désormais au cas par cas, selon le club consulté (ClubMembership).
+  private async signTokens(userId: string, email: string) {
+    const payload = { sub: userId, email };
 
     const accessToken = await this.jwtService.signAsync(payload, {
       secret: process.env.JWT_SECRET!,
@@ -36,6 +38,22 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
+  // ── Récupère les clubs de l'utilisateur, avec son rôle dans chacun ────────
+  private async getMemberships(userId: string) {
+    const memberships = await this.prisma.clubMembership.findMany({
+      where: { userId, dateFin: null }, // uniquement les appartenances actives
+      include: { club: true },
+    });
+
+    return memberships.map((m) => ({
+      clubId: m.clubId,
+      clubName: m.club.nom,
+      clubVille: m.club.ville,
+      clubLogoUrl: m.club.logoUrl,
+      role: m.role,
+    }));
+  }
+
   async register(dto: RegisterDto) {
     const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
     if (existing) {
@@ -51,12 +69,13 @@ export class AuthService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         phone: dto.phone,
-        role: dto.role ?? 'ADHERENT',
       },
     });
 
-    const tokens = await this.signTokens(user.id, user.email, user.role);
-    return { user: this.sanitize(user), ...tokens };
+    const tokens = await this.signTokens(user.id, user.email);
+    const clubs = await this.getMemberships(user.id); // vide à l'inscription — normal
+
+    return { user: this.sanitize(user), clubs, ...tokens };
   }
 
   async login(dto: LoginDto) {
@@ -70,8 +89,10 @@ export class AuthService {
       throw new UnauthorizedException('Identifiants invalides');
     }
 
-    const tokens = await this.signTokens(user.id, user.email, user.role);
-    return { user: this.sanitize(user), ...tokens };
+    const tokens = await this.signTokens(user.id, user.email);
+    const clubs = await this.getMemberships(user.id);
+
+    return { user: this.sanitize(user), clubs, ...tokens };
   }
 
   async refresh(userId: string, refreshToken: string) {
@@ -85,7 +106,7 @@ export class AuthService {
       throw new UnauthorizedException('Refresh token invalide');
     }
 
-    const tokens = await this.signTokens(user.id, user.email, user.role);
+    const tokens = await this.signTokens(user.id, user.email);
     return tokens;
   }
 
@@ -97,19 +118,16 @@ export class AuthService {
     return { message: 'Déconnecté' };
   }
 
-  // ── Réinitialisation mot de passe ────────────────────────────────────────
-
   async forgotPassword(dto: ForgotPasswordDto) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
 
-    // Réponse identique que l'utilisateur existe ou non (évite de révéler quels emails sont enregistrés)
     if (!user) {
       return { message: 'Si un compte existe avec cet email, un lien de réinitialisation a été envoyé.' };
     }
 
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
-    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 heure
+    const expires = new Date(Date.now() + 60 * 60 * 1000);
 
     await this.prisma.user.update({
       where: { id: user.id },
@@ -147,7 +165,7 @@ export class AuthService {
         passwordHash,
         resetPasswordToken: null,
         resetPasswordExpires: null,
-        refreshToken: null, // force une reconnexion sur tous les appareils
+        refreshToken: null,
       },
     });
 

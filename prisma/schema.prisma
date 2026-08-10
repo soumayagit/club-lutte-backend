@@ -7,7 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
+// ── Rôle DANS un club précis (pas un rôle global) ────────────────────────
+enum ClubRole {
   ADHERENT
   TUTEUR
   COACH
@@ -24,7 +25,7 @@ model User {
   firstName             String
   lastName              String
   phone                 String?
-  role                  Role      @default(ADHERENT)
+  isSuperAdmin          Boolean   @default(false) // toi/Karim : accès technique à TOUS les clubs
   isActive              Boolean   @default(true)
   refreshToken          String?
   resetPasswordToken    String?
@@ -32,10 +33,48 @@ model User {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  adherentsAsTuteur Adherent[] @relation("TuteurAdherents")
-  adherentProfile   Adherent?  @relation("CompteAdherent")
+  // Un compte peut appartenir à plusieurs clubs, avec un rôle différent dans chacun
+  memberships           ClubMembership[]
+
+  adherentsAsTuteur     Adherent[] @relation("TuteurAdherents")
+  adherentProfile       Adherent[] @relation("CompteAdherent")
 
   @@map("users")
+}
+
+// ── Le club lui-même ───────────────────────────────────────────────────
+model Club {
+  id            String   @id @default(uuid())
+  nom           String
+  ville         String?
+  logoUrl       String?
+  description   String?
+  federation    String?  // ex: "FFLDA"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  memberships   ClubMembership[]
+  adherents     Adherent[]
+
+  @@map("clubs")
+}
+
+// ── Le lien User ↔ Club, avec le rôle propre à CE club ────────────────────
+model ClubMembership {
+  id         String   @id @default(uuid())
+  role       ClubRole @default(ADHERENT)
+  dateDebut  DateTime @default(now())
+  dateFin    DateTime?
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  clubId     String
+  club       Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  // Un même compte ne peut avoir qu'UNE seule appartenance active par club
+  @@unique([userId, clubId])
+  @@map("club_memberships")
 }
 
 model Adherent {
@@ -44,22 +83,33 @@ model Adherent {
   lastName      String
   birthDate     DateTime
   isMinor       Boolean  @default(false)
-  licenceFFLDA  String?  @unique
+  licenceFFLDA  String?
   ageCategory   String?
   weightKg      Float?
   status        String   @default("DRAFT")
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  userId        String?  @unique
+  // Chaque fiche adhérent appartient à un club précis
+  clubId        String
+  club          Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  // Compte utilisateur associé (adhérent majeur uniquement)
+  userId        String?
   user          User?    @relation("CompteAdherent", fields: [userId], references: [id])
 
+  // Tuteur responsable (adhérent mineur uniquement)
   tuteurId      String?
   tuteur        User?    @relation("TuteurAdherents", fields: [tuteurId], references: [id])
+
   documents     Document[]
 
+  // La licence FFLDA doit être unique DANS un club, pas globalement
+  // (deux clubs différents pourraient théoriquement avoir un souci de numérotation externe)
+  @@unique([licenceFFLDA, clubId])
   @@map("adherents")
 }
+
 model Document {
   id            String   @id @default(uuid())
   type          String

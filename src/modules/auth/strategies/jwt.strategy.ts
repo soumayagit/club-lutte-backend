@@ -6,7 +6,6 @@ import { PrismaService } from '../../../prisma/prisma.service';
 export interface JwtPayload {
   sub: string;
   email: string;
-  role: string;
 }
 
 @Injectable()
@@ -15,7 +14,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'dev-secret-fallback',
+      secretOrKey: process.env.JWT_SECRET!,
     });
   }
 
@@ -24,6 +23,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user || !user.isActive) {
       return null;
     }
-    return { id: user.id, email: user.email, role: user.role };
+    // Plus de "role" ici — request.user contient juste l'identité.
+    // Le rôle par club se vérifie séparément via ClubMembership, selon le :clubId de la route.
+    return { id: user.id, email: user.email, isSuperAdmin: user.isSuperAdmin };
   }
 }
