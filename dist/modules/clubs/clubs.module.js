@@ -16,7 +16,7 @@ exports.ClubsModule = ClubsModule;
 exports.ClubsModule = ClubsModule = __decorate([
     (0, common_1.Module)({
         controllers: [clubs_controller_1.ClubsController],
-        providers: [ClaubsService],
+        providers: [clubs_service_1.ClubsService],
         exports: [clubs_service_1.ClubsService],
     })
 ], ClubsModule);
