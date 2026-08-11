@@ -28,7 +28,7 @@ export class CreateClubDto {
 }
 
 export class JoinClubDto {
-  @ApiProperty({ description: "L'id du club à rejoindre" })
+  @ApiProperty({ description: "Le code d'invitation du club", example: 'ETOILE-2K7X' })
   @IsString()
-  clubId: string;
+  inviteCode: string;
 }

@@ -12,8 +12,38 @@ interface CurrentUser {
 export class ClubsService {
   constructor(private prisma: PrismaService) {}
 
+  // ── Génère un code d'invitation court et lisible, du genre "ETOILE-2K7X" ──
+  private generateInviteCode(nom: string): string {
+    const prefix = nom
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // retire les accents
+      .replace(/[^a-zA-Z]/g, '')
+      .toUpperCase()
+      .slice(0, 6) || 'CLUB';
+
+    const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+    return `${prefix}-${suffix}`;
+  }
+
+  private async generateUniqueInviteCode(nom: string): Promise<string> {
+    let code = this.generateInviteCode(nom);
+    let attempts = 0;
+    while (await this.prisma.club.findUnique({ where: { inviteCode: code } })) {
+      code = this.generateInviteCode(nom);
+      attempts++;
+      if (attempts > 10) {
+        // Ultra improbable, mais on évite une boucle infinie
+        code = `${code}-${Date.now().toString(36).toUpperCase()}`;
+        break;
+      }
+    }
+    return code;
+  }
+
   // ── Crée un club : le créateur en devient automatiquement ADMIN ─────────
   async create(dto: CreateClubDto, currentUser: CurrentUser) {
+    const inviteCode = await this.generateUniqueInviteCode(dto.nom);
+
     const club = await this.prisma.club.create({
       data: {
         nom: dto.nom,
@@ -21,6 +51,7 @@ export class ClubsService {
         logoUrl: dto.logoUrl,
         description: dto.description,
         federation: dto.federation,
+        inviteCode,
       },
     });
 
@@ -43,7 +74,6 @@ export class ClubsService {
       orderBy: { dateDebut: 'desc' },
     });
 
-    // Compte les adhérents de chaque club en une seule requête groupée
     const clubIds = memberships.map((m) => m.clubId);
     const counts = await this.prisma.adherent.groupBy({
       by: ['clubId'],
@@ -60,6 +90,11 @@ export class ClubsService {
       federation: m.club.federation,
       role: m.role,
       adherentsCount: countMap.get(m.clubId) ?? 0,
+      // Le code d'invitation n'est visible QUE par le staff — pas utile/pas sûr
+      // de le montrer à un simple adhérent.
+      inviteCode: ['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(m.role)
+        ? m.club.inviteCode
+        : null,
     }));
   }
 
@@ -72,32 +107,36 @@ export class ClubsService {
     return club;
   }
 
-  // ── Rejoindre un club existant (rôle ADHERENT par défaut) ────────────────
+  // ── Rejoindre un club via son CODE D'INVITATION (pas l'UUID technique) ──
   async join(dto: JoinClubDto, currentUser: CurrentUser) {
-    const club = await this.prisma.club.findUnique({ where: { id: dto.clubId } });
+    const club = await this.prisma.club.findUnique({
+      where: { inviteCode: dto.inviteCode.trim().toUpperCase() },
+    });
     if (!club) {
-      throw new NotFoundException('Club introuvable');
+      throw new NotFoundException('Code d\'invitation invalide');
     }
 
     const existing = await this.prisma.clubMembership.findUnique({
-      where: { userId_clubId: { userId: currentUser.id, clubId: dto.clubId } },
+      where: { userId_clubId: { userId: currentUser.id, clubId: club.id } },
     });
     if (existing) {
       throw new ConflictException('Tu es déjà membre de ce club');
     }
 
-    return this.prisma.clubMembership.create({
+    await this.prisma.clubMembership.create({
       data: {
         userId: currentUser.id,
-        clubId: dto.clubId,
+        clubId: club.id,
         role: 'ADHERENT',
       },
     });
+
+    return club;
   }
 
   // ── Vérifie que l'utilisateur appartient bien à ce club (sinon 403) ─────
   async assertMembership(clubId: string, currentUser: CurrentUser) {
-    if (currentUser.isSuperAdmin) return null; // accès total pour le super admin technique
+    if (currentUser.isSuperAdmin) return null;
 
     const membership = await this.prisma.clubMembership.findUnique({
       where: { userId_clubId: { userId: currentUser.id, clubId } },
