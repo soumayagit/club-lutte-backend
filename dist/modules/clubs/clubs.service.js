@@ -42,6 +42,13 @@ let ClubsService = class ClubsService {
             include: { club: true },
             orderBy: { dateDebut: 'desc' },
         });
+        const clubIds = memberships.map((m) => m.clubId);
+        const counts = await this.prisma.adherent.groupBy({
+            by: ['clubId'],
+            where: { clubId: { in: clubIds }, status: { not: 'ARCHIVED' } },
+            _count: { id: true },
+        });
+        const countMap = new Map(counts.map((c) => [c.clubId, c._count.id]));
         return memberships.map((m) => ({
             id: m.club.id,
             nom: m.club.nom,
@@ -49,6 +56,7 @@ let ClubsService = class ClubsService {
             logoUrl: m.club.logoUrl,
             federation: m.club.federation,
             role: m.role,
+            adherentsCount: countMap.get(m.clubId) ?? 0,
         }));
     }
     async findOne(clubId, currentUser) {
