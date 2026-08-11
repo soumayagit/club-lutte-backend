@@ -50,7 +50,7 @@ model Club {
   logoUrl       String?
   description   String?
   federation    String?  // ex: "FFLDA"
-  inviteCode      @unique // code court partagé pour rejoindre le club, ex: "ETOILE-2K7X"
+inviteCode    String   @unique // code court partagé pour rejoindre le club, ex: "ETOILE-2K7X"
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
