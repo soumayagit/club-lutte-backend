@@ -1,89 +1,108 @@
-import { IsString, IsDateString, IsOptional, IsNumber, IsIn, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsIn } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-const AGE_CATEGORIES = ['Poussins', 'Benjamins', 'Minimes', 'Cadets', 'Juniors', 'Seniors'];
-const STATUSES = ['DRAFT', 'SUBMITTED', 'TO_COMPLETE', 'VALIDATED', 'REFUSED', 'ARCHIVED'];
+const STATUS_VALUES = ['DRAFT', 'SUBMITTED', 'TO_COMPLETE', 'VALIDATED', 'REFUSED', 'ARCHIVED'];
 
 export class CreateAdherentDto {
+  @ApiProperty()
   @IsString()
   firstName: string;
 
+  @ApiProperty()
   @IsString()
   lastName: string;
 
-  @IsDateString()
+  @ApiProperty({ example: '2010-03-15' })
+  @IsString()
   birthDate: string;
 
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsIn(AGE_CATEGORIES)
+  @IsString()
   ageCategory?: string;
 
+  @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
   weightKg?: number;
 
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   licenceFFLDA?: string;
 
+  @ApiPropertyOptional({ description: 'Uniquement utilisé par le staff/bureau pour rattacher un tuteur' })
   @IsOptional()
-  @IsUUID()
+  @IsString()
   tuteurId?: string;
 }
 
-export class UpdateAdherentDto {
+export class DraftAdherentDto {
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   firstName?: string;
 
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   lastName?: string;
 
+  @ApiPropertyOptional({ example: '2010-03-15' })
   @IsOptional()
-  @IsDateString()
+  @IsString()
   birthDate?: string;
 
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsIn(AGE_CATEGORIES)
+  @IsString()
   ageCategory?: string;
 
+  @ApiPropertyOptional()
   @IsOptional()
   @IsNumber()
   weightKg?: number;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  licenceFFLDA?: string;
+}
+
+export class UpdateAdherentDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @ApiPropertyOptional({ example: '2010-03-15' })
+  @IsOptional()
+  @IsString()
+  birthDate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  ageCategory?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  weightKg?: number;
+
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   licenceFFLDA?: string;
 }
 
 export class UpdateStatusDto {
-  @IsIn(STATUSES)
+  @ApiProperty({ enum: STATUS_VALUES, example: 'VALIDATED' })
+  @IsIn(STATUS_VALUES)
   status: string;
-}
-
-// ── Brouillon : tout est optionnel, aucun champ requis, pas de blocage de validation métier ──
-export class DraftAdherentDto {
-  @IsOptional()
-  @IsString()
-  firstName?: string;
-
-  @IsOptional()
-  @IsString()
-  lastName?: string;
-
-  @IsOptional()
-  @IsDateString()
-  birthDate?: string;
-
-  @IsOptional()
-  @IsIn(AGE_CATEGORIES)
-  ageCategory?: string;
-
-  @IsOptional()
-  @IsNumber()
-  weightKg?: number;
-
-  @IsOptional()
-  @IsString()
-  licenceFFLDA?: string;
 }
