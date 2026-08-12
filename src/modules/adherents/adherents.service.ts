@@ -85,7 +85,7 @@ export class AdherentsService {
           userId,
           tuteurId,
           clubId,
-          status: 'DRAFT',
+          status: 'SUBMITTED',
         },
       });
     } catch (error) {
