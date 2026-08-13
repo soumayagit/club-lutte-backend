@@ -155,4 +155,78 @@ export class ClubsService {
     const membership = await this.assertMembership(clubId, currentUser);
     return membership!.role;
   }
+
+  // ── Met à jour le logo du club — réservé au staff ────────────────────────
+  async updateLogo(clubId: string, logoUrl: string, currentUser: CurrentUser) {
+    const role = await this.getRoleInClub(clubId, currentUser);
+    if (!['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(role)) {
+      throw new ForbiddenException('Seul le staff du club peut modifier le logo');
+    }
+
+    return this.prisma.club.update({
+      where: { id: clubId },
+      data: { logoUrl },
+    });
+  }
+
+  // ── Liste les membres du club avec leur rôle — réservé au staff ─────────
+  async getMembers(clubId: string, currentUser: CurrentUser) {
+    const role = await this.getRoleInClub(clubId, currentUser);
+    if (!['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(role)) {
+      throw new ForbiddenException('Seul le staff du club peut voir la liste des membres');
+    }
+
+    const memberships = await this.prisma.clubMembership.findMany({
+      where: { clubId, dateFin: null },
+      include: { user: true },
+      orderBy: { dateDebut: 'asc' },
+    });
+
+    return memberships.map((m) => ({
+      userId: m.userId,
+      firstName: m.user.firstName,
+      lastName: m.user.lastName,
+      email: m.user.email,
+      role: m.role,
+      dateDebut: m.dateDebut,
+    }));
+  }
+
+  // ── Change le rôle d'un membre — réservé à l'ADMIN uniquement ────────────
+  async updateMemberRole(
+    clubId: string,
+    targetUserId: string,
+    newRole: string,
+    currentUser: CurrentUser,
+  ) {
+    const role = await this.getRoleInClub(clubId, currentUser);
+    if (role !== 'ADMIN' && !currentUser.isSuperAdmin) {
+      throw new ForbiddenException('Seul un Admin du club peut changer le rôle d\'un membre');
+    }
+
+    const membership = await this.prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId: targetUserId, clubId } },
+    });
+    if (!membership) {
+      throw new NotFoundException('Ce membre n\'appartient pas à ce club');
+    }
+
+    // Empêche un Admin de se rétrograder lui-même s'il est le SEUL admin du club
+    // (éviterait de bloquer complètement la gestion du club).
+    if (targetUserId === currentUser.id && newRole !== 'ADMIN') {
+      const adminCount = await this.prisma.clubMembership.count({
+        where: { clubId, role: 'ADMIN', dateFin: null },
+      });
+      if (adminCount <= 1) {
+        throw new ForbiddenException(
+          'Tu es le seul Admin de ce club — nomme un autre Admin avant de changer ton propre rôle',
+        );
+      }
+    }
+
+    return this.prisma.clubMembership.update({
+      where: { userId_clubId: { userId: targetUserId, clubId } },
+      data: { role: newRole as any },
+    });
+  }
 }
