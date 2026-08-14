@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UploadedFile, UseInterceptors, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -92,5 +92,15 @@ export class ClubsController {
     @CurrentUser() user: any,
   ) {
     return this.clubsService.updateMemberRole(clubId, userId, dto.role, user);
+  }
+
+  // ── Retire un membre du club — réservé à l'Admin ─────────────────────────
+  @Delete(':clubId/members/:userId')
+  removeMember(
+    @Param('clubId') clubId: string,
+    @Param('userId') userId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.clubsService.removeMember(clubId, userId, user);
   }
 }

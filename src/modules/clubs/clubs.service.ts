@@ -247,4 +247,39 @@ export class ClubsService {
       },
     });
   }
+
+  // ── Retire un membre du club — réservé à l'ADMIN uniquement ─────────────
+  // On ne supprime pas la ligne (traçabilité), on marque juste dateFin — le
+  // membre n'apparaît plus dans les listes actives mais l'historique reste.
+  async removeMember(clubId: string, targetUserId: string, currentUser: CurrentUser) {
+    const role = await this.getRoleInClub(clubId, currentUser);
+    if (role !== 'ADMIN' && !currentUser.isSuperAdmin) {
+      throw new ForbiddenException('Seul un Admin du club peut retirer un membre');
+    }
+
+    const membership = await this.prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId: targetUserId, clubId } },
+    });
+    if (!membership) {
+      throw new NotFoundException('Ce membre n'appartient pas à ce club');
+    }
+
+    // Un Admin ne peut pas se retirer lui-même s'il est le seul Admin —
+    // même protection que pour le changement de rôle.
+    if (targetUserId === currentUser.id) {
+      const adminCount = await this.prisma.clubMembership.count({
+        where: { clubId, role: 'ADMIN', dateFin: null },
+      });
+      if (adminCount <= 1) {
+        throw new ForbiddenException(
+          'Tu es le seul Admin de ce club — nomme un autre Admin avant de te retirer',
+        );
+      }
+    }
+
+    return this.prisma.clubMembership.update({
+      where: { userId_clubId: { userId: targetUserId, clubId } },
+      data: { dateFin: new Date() },
+    });
+  }
 }
