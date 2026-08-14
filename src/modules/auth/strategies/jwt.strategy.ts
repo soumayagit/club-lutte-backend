@@ -12,7 +12,14 @@ export interface JwtPayload {
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   constructor(private prisma: PrismaService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      // Accepte le token soit dans le header Authorization (usage normal de l'app),
+      // soit en paramètre ?token= dans l'URL (nécessaire pour les liens de
+      // téléchargement ouverts directement dans le navigateur, où on ne peut
+      // pas facilement ajouter un header).
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        ExtractJwt.fromAuthHeaderAsBearerToken(),
+        (req) => req?.query?.token || null,
+      ]),
       ignoreExpiration: false,
       secretOrKey: process.env.JWT_SECRET!,
     });
