@@ -55,6 +55,9 @@ let ClubsController = class ClubsController {
     updateMemberRole(clubId, userId, dto, user) {
         return this.clubsService.updateMemberRole(clubId, userId, dto.role, user);
     }
+    removeMember(clubId, userId, user) {
+        return this.clubsService.removeMember(clubId, userId, user);
+    }
 };
 exports.ClubsController = ClubsController;
 __decorate([
@@ -141,6 +144,15 @@ __decorate([
     __metadata("design:paramtypes", [String, String, club_dto_1.UpdateMemberRoleDto, Object]),
     __metadata("design:returntype", void 0)
 ], ClubsController.prototype, "updateMemberRole", null);
+__decorate([
+    (0, common_1.Delete)(':clubId/members/:userId'),
+    __param(0, (0, common_1.Param)('clubId')),
+    __param(1, (0, common_1.Param)('userId')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], ClubsController.prototype, "removeMember", null);
 exports.ClubsController = ClubsController = __decorate([
     (0, swagger_1.ApiTags)('clubs'),
     (0, swagger_1.ApiBearerAuth)(),

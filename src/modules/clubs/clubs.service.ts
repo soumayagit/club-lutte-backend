@@ -12,11 +12,10 @@ interface CurrentUser {
 export class ClubsService {
   constructor(private prisma: PrismaService) {}
 
-  // ── Génère un code d'invitation court et lisible, du genre "ETOILE-2K7X" ──
   private generateInviteCode(nom: string): string {
     const prefix = nom
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // retire les accents
+      .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z]/g, '')
       .toUpperCase()
       .slice(0, 6) || 'CLUB';
@@ -32,7 +31,6 @@ export class ClubsService {
       code = this.generateInviteCode(nom);
       attempts++;
       if (attempts > 10) {
-        // Ultra improbable, mais on évite une boucle infinie
         code = `${code}-${Date.now().toString(36).toUpperCase()}`;
         break;
       }
@@ -40,7 +38,6 @@ export class ClubsService {
     return code;
   }
 
-  // ── Crée un club : le créateur en devient automatiquement ADMIN ─────────
   async create(dto: CreateClubDto, currentUser: CurrentUser) {
     const inviteCode = await this.generateUniqueInviteCode(dto.nom);
 
@@ -66,7 +63,6 @@ export class ClubsService {
     return club;
   }
 
-  // ── Liste les clubs auxquels l'utilisateur connecté appartient ──────────
   async findMine(currentUser: CurrentUser) {
     const memberships = await this.prisma.clubMembership.findMany({
       where: { userId: currentUser.id, dateFin: null },
@@ -90,8 +86,6 @@ export class ClubsService {
       federation: m.club.federation,
       role: m.role,
       adherentsCount: countMap.get(m.clubId) ?? 0,
-      // Le code d'invitation n'est visible QUE par le staff — pas utile/pas sûr
-      // de le montrer à un simple adhérent.
       inviteCode: ['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(m.role)
         ? m.club.inviteCode
         : null,
@@ -107,13 +101,12 @@ export class ClubsService {
     return club;
   }
 
-  // ── Rejoindre un club via son CODE D'INVITATION (pas l'UUID technique) ──
   async join(dto: JoinClubDto, currentUser: CurrentUser) {
     const club = await this.prisma.club.findUnique({
       where: { inviteCode: dto.inviteCode.trim().toUpperCase() },
     });
     if (!club) {
-      throw new NotFoundException('Code d\'invitation invalide');
+      throw new NotFoundException("Code d'invitation invalide");
     }
 
     const existing = await this.prisma.clubMembership.findUnique({
@@ -134,7 +127,6 @@ export class ClubsService {
     return club;
   }
 
-  // ── Vérifie que l'utilisateur appartient bien à ce club (sinon 403) ─────
   async assertMembership(clubId: string, currentUser: CurrentUser) {
     if (currentUser.isSuperAdmin) return null;
 
@@ -149,14 +141,12 @@ export class ClubsService {
     return membership;
   }
 
-  // ── Récupère le rôle de l'utilisateur dans ce club précis ────────────────
   async getRoleInClub(clubId: string, currentUser: CurrentUser): Promise<string> {
     if (currentUser.isSuperAdmin) return 'ADMIN';
     const membership = await this.assertMembership(clubId, currentUser);
     return membership!.role;
   }
 
-  // ── Met à jour le logo du club — réservé au staff ────────────────────────
   async updateLogo(clubId: string, logoUrl: string, currentUser: CurrentUser) {
     const role = await this.getRoleInClub(clubId, currentUser);
     if (!['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(role)) {
@@ -169,7 +159,6 @@ export class ClubsService {
     });
   }
 
-  // ── Liste les membres du club avec leur rôle — réservé au staff ─────────
   async getMembers(clubId: string, currentUser: CurrentUser) {
     const role = await this.getRoleInClub(clubId, currentUser);
     if (!['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(role)) {
@@ -192,7 +181,6 @@ export class ClubsService {
     }));
   }
 
-  // ── Change le rôle d'un membre — réservé à l'ADMIN uniquement ────────────
   async updateMemberRole(
     clubId: string,
     targetUserId: string,
@@ -201,18 +189,16 @@ export class ClubsService {
   ) {
     const role = await this.getRoleInClub(clubId, currentUser);
     if (role !== 'ADMIN' && !currentUser.isSuperAdmin) {
-      throw new ForbiddenException('Seul un Admin du club peut changer le rôle d\'un membre');
+      throw new ForbiddenException("Seul un Admin du club peut changer le rôle d'un membre");
     }
 
     const membership = await this.prisma.clubMembership.findUnique({
       where: { userId_clubId: { userId: targetUserId, clubId } },
     });
     if (!membership) {
-      throw new NotFoundException('Ce membre n\'appartient pas à ce club');
+      throw new NotFoundException("Ce membre n'appartient pas à ce club");
     }
 
-    // Empêche un Admin de se rétrograder lui-même s'il est le SEUL admin du club
-    // (éviterait de bloquer complètement la gestion du club).
     if (targetUserId === currentUser.id && newRole !== 'ADMIN') {
       const adminCount = await this.prisma.clubMembership.count({
         where: { clubId, role: 'ADMIN', dateFin: null },
@@ -230,7 +216,6 @@ export class ClubsService {
     });
   }
 
-  // ── Modifie les infos générales du club — réservé au staff ──────────────
   async updateInfo(clubId: string, dto: any, currentUser: CurrentUser) {
     const role = await this.getRoleInClub(clubId, currentUser);
     if (!['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(role)) {
@@ -248,9 +233,6 @@ export class ClubsService {
     });
   }
 
-  // ── Retire un membre du club — réservé à l'ADMIN uniquement ─────────────
-  // On ne supprime pas la ligne (traçabilité), on marque juste dateFin — le
-  // membre n'apparaît plus dans les listes actives mais l'historique reste.
   async removeMember(clubId: string, targetUserId: string, currentUser: CurrentUser) {
     const role = await this.getRoleInClub(clubId, currentUser);
     if (role !== 'ADMIN' && !currentUser.isSuperAdmin) {
@@ -261,11 +243,9 @@ export class ClubsService {
       where: { userId_clubId: { userId: targetUserId, clubId } },
     });
     if (!membership) {
-      throw new NotFoundException('Ce membre n'appartient pas à ce club');
+      throw new NotFoundException("Ce membre n'appartient pas à ce club");
     }
 
-    // Un Admin ne peut pas se retirer lui-même s'il est le seul Admin —
-    // même protection que pour le changement de rôle.
     if (targetUserId === currentUser.id) {
       const adminCount = await this.prisma.clubMembership.count({
         where: { clubId, role: 'ADMIN', dateFin: null },

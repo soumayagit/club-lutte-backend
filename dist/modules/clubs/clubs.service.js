@@ -100,7 +100,7 @@ let ClubsService = class ClubsService {
             where: { inviteCode: dto.inviteCode.trim().toUpperCase() },
         });
         if (!club) {
-            throw new common_1.NotFoundException('Code d\'invitation invalide');
+            throw new common_1.NotFoundException("Code d'invitation invalide");
         }
         const existing = await this.prisma.clubMembership.findUnique({
             where: { userId_clubId: { userId: currentUser.id, clubId: club.id } },
@@ -166,13 +166,13 @@ let ClubsService = class ClubsService {
     async updateMemberRole(clubId, targetUserId, newRole, currentUser) {
         const role = await this.getRoleInClub(clubId, currentUser);
         if (role !== 'ADMIN' && !currentUser.isSuperAdmin) {
-            throw new common_1.ForbiddenException('Seul un Admin du club peut changer le rôle d\'un membre');
+            throw new common_1.ForbiddenException("Seul un Admin du club peut changer le rôle d'un membre");
         }
         const membership = await this.prisma.clubMembership.findUnique({
             where: { userId_clubId: { userId: targetUserId, clubId } },
         });
         if (!membership) {
-            throw new common_1.NotFoundException('Ce membre n\'appartient pas à ce club');
+            throw new common_1.NotFoundException("Ce membre n'appartient pas à ce club");
         }
         if (targetUserId === currentUser.id && newRole !== 'ADMIN') {
             const adminCount = await this.prisma.clubMembership.count({
@@ -200,6 +200,30 @@ let ClubsService = class ClubsService {
                 ...(dto.description !== undefined && { description: dto.description }),
                 ...(dto.federation !== undefined && { federation: dto.federation }),
             },
+        });
+    }
+    async removeMember(clubId, targetUserId, currentUser) {
+        const role = await this.getRoleInClub(clubId, currentUser);
+        if (role !== 'ADMIN' && !currentUser.isSuperAdmin) {
+            throw new common_1.ForbiddenException('Seul un Admin du club peut retirer un membre');
+        }
+        const membership = await this.prisma.clubMembership.findUnique({
+            where: { userId_clubId: { userId: targetUserId, clubId } },
+        });
+        if (!membership) {
+            throw new common_1.NotFoundException("Ce membre n'appartient pas à ce club");
+        }
+        if (targetUserId === currentUser.id) {
+            const adminCount = await this.prisma.clubMembership.count({
+                where: { clubId, role: 'ADMIN', dateFin: null },
+            });
+            if (adminCount <= 1) {
+                throw new common_1.ForbiddenException('Tu es le seul Admin de ce club — nomme un autre Admin avant de te retirer');
+            }
+        }
+        return this.prisma.clubMembership.update({
+            where: { userId_clubId: { userId: targetUserId, clubId } },
+            data: { dateFin: new Date() },
         });
     }
 };
