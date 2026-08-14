@@ -9,10 +9,10 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.DraftAdherentDto = exports.UpdateStatusDto = exports.UpdateAdherentDto = exports.CreateAdherentDto = void 0;
+exports.UpdateStatusDto = exports.UpdateAdherentDto = exports.DraftAdherentDto = exports.CreateAdherentDto = void 0;
 const class_validator_1 = require("class-validator");
-const AGE_CATEGORIES = ['Poussins', 'Benjamins', 'Minimes', 'Cadets', 'Juniors', 'Seniors'];
-const STATUSES = ['DRAFT', 'SUBMITTED', 'TO_COMPLETE', 'VALIDATED', 'REFUSED', 'ARCHIVED'];
+const swagger_1 = require("@nestjs/swagger");
+const STATUS_VALUES = ['DRAFT', 'SUBMITTED', 'TO_COMPLETE', 'VALIDATED', 'REFUSED', 'ARCHIVED'];
 class CreateAdherentDto {
     firstName;
     lastName;
@@ -24,84 +24,44 @@ class CreateAdherentDto {
 }
 exports.CreateAdherentDto = CreateAdherentDto;
 __decorate([
+    (0, swagger_1.ApiProperty)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateAdherentDto.prototype, "firstName", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateAdherentDto.prototype, "lastName", void 0);
 __decorate([
-    (0, class_validator_1.IsDateString)(),
+    (0, swagger_1.ApiProperty)({ example: '2010-03-15' }),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateAdherentDto.prototype, "birthDate", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(AGE_CATEGORIES),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateAdherentDto.prototype, "ageCategory", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateAdherentDto.prototype, "weightKg", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateAdherentDto.prototype, "licenceFFLDA", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Uniquement utilisé par le staff/bureau pour rattacher un tuteur' }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateAdherentDto.prototype, "tuteurId", void 0);
-class UpdateAdherentDto {
-    firstName;
-    lastName;
-    birthDate;
-    ageCategory;
-    weightKg;
-    licenceFFLDA;
-}
-exports.UpdateAdherentDto = UpdateAdherentDto;
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], UpdateAdherentDto.prototype, "firstName", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], UpdateAdherentDto.prototype, "lastName", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDateString)(),
-    __metadata("design:type", String)
-], UpdateAdherentDto.prototype, "birthDate", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(AGE_CATEGORIES),
-    __metadata("design:type", String)
-], UpdateAdherentDto.prototype, "ageCategory", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsNumber)(),
-    __metadata("design:type", Number)
-], UpdateAdherentDto.prototype, "weightKg", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], UpdateAdherentDto.prototype, "licenceFFLDA", void 0);
-class UpdateStatusDto {
-    status;
-}
-exports.UpdateStatusDto = UpdateStatusDto;
-__decorate([
-    (0, class_validator_1.IsIn)(STATUSES),
-    __metadata("design:type", String)
-], UpdateStatusDto.prototype, "status", void 0);
 class DraftAdherentDto {
     firstName;
     lastName;
@@ -112,32 +72,92 @@ class DraftAdherentDto {
 }
 exports.DraftAdherentDto = DraftAdherentDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], DraftAdherentDto.prototype, "firstName", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], DraftAdherentDto.prototype, "lastName", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '2010-03-15' }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsDateString)(),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], DraftAdherentDto.prototype, "birthDate", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(AGE_CATEGORIES),
+    (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], DraftAdherentDto.prototype, "ageCategory", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], DraftAdherentDto.prototype, "weightKg", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], DraftAdherentDto.prototype, "licenceFFLDA", void 0);
+class UpdateAdherentDto {
+    firstName;
+    lastName;
+    birthDate;
+    ageCategory;
+    weightKg;
+    licenceFFLDA;
+}
+exports.UpdateAdherentDto = UpdateAdherentDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateAdherentDto.prototype, "firstName", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateAdherentDto.prototype, "lastName", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '2010-03-15' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateAdherentDto.prototype, "birthDate", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateAdherentDto.prototype, "ageCategory", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateAdherentDto.prototype, "weightKg", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateAdherentDto.prototype, "licenceFFLDA", void 0);
+class UpdateStatusDto {
+    status;
+}
+exports.UpdateStatusDto = UpdateStatusDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({ enum: STATUS_VALUES, example: 'VALIDATED' }),
+    (0, class_validator_1.IsIn)(STATUS_VALUES),
+    __metadata("design:type", String)
+], UpdateStatusDto.prototype, "status", void 0);

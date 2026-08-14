@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.JoinClubDto = exports.CreateClubDto = void 0;
+exports.UpdateClubDto = exports.UpdateMemberRoleDto = exports.JoinClubDto = exports.CreateClubDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 class CreateClubDto {
@@ -50,11 +50,54 @@ __decorate([
     __metadata("design:type", String)
 ], CreateClubDto.prototype, "federation", void 0);
 class JoinClubDto {
-    clubId;
+    inviteCode;
 }
 exports.JoinClubDto = JoinClubDto;
 __decorate([
-    (0, swagger_1.ApiProperty)({ description: "L'id du club à rejoindre" }),
+    (0, swagger_1.ApiProperty)({ description: "Le code d'invitation du club", example: 'ETOILE-2K7X' }),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], JoinClubDto.prototype, "clubId", void 0);
+], JoinClubDto.prototype, "inviteCode", void 0);
+class UpdateMemberRoleDto {
+    role;
+}
+exports.UpdateMemberRoleDto = UpdateMemberRoleDto;
+__decorate([
+    (0, swagger_1.ApiProperty)({
+        enum: ['ADHERENT', 'TUTEUR', 'COACH', 'BUREAU', 'TRESORIER', 'SECRETAIRE', 'ADMIN'],
+        example: 'COACH',
+    }),
+    (0, class_validator_1.IsIn)(['ADHERENT', 'TUTEUR', 'COACH', 'BUREAU', 'TRESORIER', 'SECRETAIRE', 'ADMIN']),
+    __metadata("design:type", String)
+], UpdateMemberRoleDto.prototype, "role", void 0);
+class UpdateClubDto {
+    nom;
+    ville;
+    description;
+    federation;
+}
+exports.UpdateClubDto = UpdateClubDto;
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'RS Étoile Lutte' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateClubDto.prototype, "nom", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Tunis' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateClubDto.prototype, "ville", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateClubDto.prototype, "description", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'FFLDA' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateClubDto.prototype, "federation", void 0);

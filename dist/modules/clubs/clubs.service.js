@@ -17,7 +17,31 @@ let ClubsService = class ClubsService {
     constructor(prisma) {
         this.prisma = prisma;
     }
+    generateInviteCode(nom) {
+        const prefix = nom
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z]/g, '')
+            .toUpperCase()
+            .slice(0, 6) || 'CLUB';
+        const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+        return `${prefix}-${suffix}`;
+    }
+    async generateUniqueInviteCode(nom) {
+        let code = this.generateInviteCode(nom);
+        let attempts = 0;
+        while (await this.prisma.club.findUnique({ where: { inviteCode: code } })) {
+            code = this.generateInviteCode(nom);
+            attempts++;
+            if (attempts > 10) {
+                code = `${code}-${Date.now().toString(36).toUpperCase()}`;
+                break;
+            }
+        }
+        return code;
+    }
     async create(dto, currentUser) {
+        const inviteCode = await this.generateUniqueInviteCode(dto.nom);
         const club = await this.prisma.club.create({
             data: {
                 nom: dto.nom,
@@ -25,6 +49,7 @@ let ClubsService = class ClubsService {
                 logoUrl: dto.logoUrl,
                 description: dto.description,
                 federation: dto.federation,
+                inviteCode,
             },
         });
         await this.prisma.clubMembership.create({
@@ -57,6 +82,9 @@ let ClubsService = class ClubsService {
             federation: m.club.federation,
             role: m.role,
             adherentsCount: countMap.get(m.clubId) ?? 0,
+            inviteCode: ['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(m.role)
+                ? m.club.inviteCode
+                : null,
         }));
     }
     async findOne(clubId, currentUser) {
@@ -68,23 +96,26 @@ let ClubsService = class ClubsService {
         return club;
     }
     async join(dto, currentUser) {
-        const club = await this.prisma.club.findUnique({ where: { id: dto.clubId } });
+        const club = await this.prisma.club.findUnique({
+            where: { inviteCode: dto.inviteCode.trim().toUpperCase() },
+        });
         if (!club) {
-            throw new common_1.NotFoundException('Club introuvable');
+            throw new common_1.NotFoundException('Code d\'invitation invalide');
         }
         const existing = await this.prisma.clubMembership.findUnique({
-            where: { userId_clubId: { userId: currentUser.id, clubId: dto.clubId } },
+            where: { userId_clubId: { userId: currentUser.id, clubId: club.id } },
         });
         if (existing) {
             throw new common_1.ConflictException('Tu es déjà membre de ce club');
         }
-        return this.prisma.clubMembership.create({
+        await this.prisma.clubMembership.create({
             data: {
                 userId: currentUser.id,
-                clubId: dto.clubId,
+                clubId: club.id,
                 role: 'ADHERENT',
             },
         });
+        return club;
     }
     async assertMembership(clubId, currentUser) {
         if (currentUser.isSuperAdmin)
@@ -102,6 +133,74 @@ let ClubsService = class ClubsService {
             return 'ADMIN';
         const membership = await this.assertMembership(clubId, currentUser);
         return membership.role;
+    }
+    async updateLogo(clubId, logoUrl, currentUser) {
+        const role = await this.getRoleInClub(clubId, currentUser);
+        if (!['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(role)) {
+            throw new common_1.ForbiddenException('Seul le staff du club peut modifier le logo');
+        }
+        return this.prisma.club.update({
+            where: { id: clubId },
+            data: { logoUrl },
+        });
+    }
+    async getMembers(clubId, currentUser) {
+        const role = await this.getRoleInClub(clubId, currentUser);
+        if (!['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(role)) {
+            throw new common_1.ForbiddenException('Seul le staff du club peut voir la liste des membres');
+        }
+        const memberships = await this.prisma.clubMembership.findMany({
+            where: { clubId, dateFin: null },
+            include: { user: true },
+            orderBy: { dateDebut: 'asc' },
+        });
+        return memberships.map((m) => ({
+            userId: m.userId,
+            firstName: m.user.firstName,
+            lastName: m.user.lastName,
+            email: m.user.email,
+            role: m.role,
+            dateDebut: m.dateDebut,
+        }));
+    }
+    async updateMemberRole(clubId, targetUserId, newRole, currentUser) {
+        const role = await this.getRoleInClub(clubId, currentUser);
+        if (role !== 'ADMIN' && !currentUser.isSuperAdmin) {
+            throw new common_1.ForbiddenException('Seul un Admin du club peut changer le rôle d\'un membre');
+        }
+        const membership = await this.prisma.clubMembership.findUnique({
+            where: { userId_clubId: { userId: targetUserId, clubId } },
+        });
+        if (!membership) {
+            throw new common_1.NotFoundException('Ce membre n\'appartient pas à ce club');
+        }
+        if (targetUserId === currentUser.id && newRole !== 'ADMIN') {
+            const adminCount = await this.prisma.clubMembership.count({
+                where: { clubId, role: 'ADMIN', dateFin: null },
+            });
+            if (adminCount <= 1) {
+                throw new common_1.ForbiddenException('Tu es le seul Admin de ce club — nomme un autre Admin avant de changer ton propre rôle');
+            }
+        }
+        return this.prisma.clubMembership.update({
+            where: { userId_clubId: { userId: targetUserId, clubId } },
+            data: { role: newRole },
+        });
+    }
+    async updateInfo(clubId, dto, currentUser) {
+        const role = await this.getRoleInClub(clubId, currentUser);
+        if (!['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(role)) {
+            throw new common_1.ForbiddenException('Seul le staff du club peut modifier ses informations');
+        }
+        return this.prisma.club.update({
+            where: { id: clubId },
+            data: {
+                ...(dto.nom !== undefined && { nom: dto.nom }),
+                ...(dto.ville !== undefined && { ville: dto.ville }),
+                ...(dto.description !== undefined && { description: dto.description }),
+                ...(dto.federation !== undefined && { federation: dto.federation }),
+            },
+        });
     }
 };
 exports.ClubsService = ClubsService;

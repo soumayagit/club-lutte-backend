@@ -81,7 +81,7 @@ let AdherentsService = class AdherentsService {
                     userId,
                     tuteurId,
                     clubId,
-                    status: 'DRAFT',
+                    status: 'SUBMITTED',
                 },
             });
         }
