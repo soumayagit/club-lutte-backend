@@ -32,6 +32,22 @@ let AdherentsController = class AdherentsController {
     saveDraft(id, dto, user) {
         return this.adherentsService.saveDraft(id, dto, user);
     }
+    async exportPdf(clubId, user, res) {
+        const buffer = await this.adherentsService.exportPdf(clubId, user);
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="adherents.pdf"',
+        });
+        res.send(buffer);
+    }
+    async exportExcel(clubId, user, res) {
+        const buffer = await this.adherentsService.exportExcel(clubId, user);
+        res.set({
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition': 'attachment; filename="adherents.xlsx"',
+        });
+        res.send(buffer);
+    }
     findAll(clubId, user) {
         return this.adherentsService.findAll(clubId, user);
     }
@@ -76,6 +92,24 @@ __decorate([
     __metadata("design:paramtypes", [String, adherent_dto_1.DraftAdherentDto, Object]),
     __metadata("design:returntype", void 0)
 ], AdherentsController.prototype, "saveDraft", null);
+__decorate([
+    (0, common_1.Get)('export/pdf'),
+    __param(0, (0, common_1.Param)('clubId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], AdherentsController.prototype, "exportPdf", null);
+__decorate([
+    (0, common_1.Get)('export/excel'),
+    __param(0, (0, common_1.Param)('clubId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], AdherentsController.prototype, "exportExcel", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Param)('clubId')),

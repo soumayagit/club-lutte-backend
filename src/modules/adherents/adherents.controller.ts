@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Body, Param, Res, Query } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { AdherentsService } from './adherents.service';
 import { CreateAdherentDto, UpdateAdherentDto, UpdateStatusDto, DraftAdherentDto } from './dto/adherent.dto';
@@ -23,6 +24,26 @@ export class AdherentsController {
   @Patch(':id/draft')
   saveDraft(@Param('id') id: string, @Body() dto: DraftAdherentDto, @CurrentUser() user: any) {
     return this.adherentsService.saveDraft(id, dto, user);
+  }
+
+  @Get('export/pdf')
+  async exportPdf(@Param('clubId') clubId: string, @CurrentUser() user: any, @Res() res: Response) {
+    const buffer = await this.adherentsService.exportPdf(clubId, user);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="adherents.pdf"',
+    });
+    res.send(buffer);
+  }
+
+  @Get('export/excel')
+  async exportExcel(@Param('clubId') clubId: string, @CurrentUser() user: any, @Res() res: Response) {
+    const buffer = await this.adherentsService.exportExcel(clubId, user);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="adherents.xlsx"',
+    });
+    res.send(buffer);
   }
 
   @Get()

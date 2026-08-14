@@ -213,7 +213,16 @@ export class AdherentsService {
       throw new NotFoundException('Adhérent introuvable');
     }
     const roleInClub = await this.clubsService.getRoleInClub(adherent.clubId, currentUser);
-    if (!STAFF_ROLES.includes(roleInClub)) {
+
+    const isOwner =
+      (roleInClub === 'ADHERENT' && adherent.userId === currentUser.id) ||
+      (roleInClub === 'TUTEUR' && adherent.tuteurId === currentUser.id);
+
+    // Le propriétaire d'un brouillon peut le SOUMETTRE lui-même (DRAFT → SUBMITTED),
+    // mais rien d'autre (pas de validation/refus — ça reste réservé au staff).
+    const isSelfSubmit = isOwner && adherent.status === 'DRAFT' && dto.status === 'SUBMITTED';
+
+    if (!STAFF_ROLES.includes(roleInClub) && !isSelfSubmit) {
       throw new ForbiddenException('Seul le bureau peut modifier le statut d\'un dossier');
     }
     return this.prisma.adherent.update({ where: { id }, data: { status: dto.status } });
@@ -241,5 +250,101 @@ export class AdherentsService {
     if (roleInClub === 'TUTEUR' && adherent.tuteurId === currentUser.id) return;
     if (roleInClub === 'ADHERENT' && adherent.userId === currentUser.id) return;
     throw new ForbiddenException('Accès refusé à cette fiche adhérent');
+  }
+
+  // ── Génère un export PDF de la liste des adhérents du club ──────────────
+  async exportPdf(clubId: string, currentUser: CurrentUser): Promise<Buffer> {
+    const roleInClub = await this.clubsService.getRoleInClub(clubId, currentUser);
+    if (!STAFF_ROLES.includes(roleInClub)) {
+      throw new ForbiddenException("Seul le staff peut exporter la liste des adhérents");
+    }
+
+    const club = await this.prisma.club.findUnique({ where: { id: clubId } });
+    const adherentsList = await this.prisma.adherent.findMany({
+      where: { clubId, status: { not: 'ARCHIVED' } },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    });
+
+    const PDFDocument = require('pdfkit');
+    const doc = new PDFDocument({ margin: 40, size: 'A4' });
+    const chunks: Buffer[] = [];
+    doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+
+    const donePromise = new Promise<Buffer>((resolve) => {
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+    });
+
+    doc.fontSize(18).font('Helvetica-Bold').text(club?.nom ?? 'Club', { align: 'center' });
+    doc.fontSize(10).font('Helvetica').fillColor('#666')
+      .text(`Liste des adhérents — ${new Date().toLocaleDateString('fr-FR')}`, { align: 'center' });
+    doc.moveDown(1.5);
+
+    const colX = { nom: 40, prenom: 160, naissance: 280, categorie: 370, licence: 470 };
+    doc.fontSize(9).font('Helvetica-Bold').fillColor('#000');
+    doc.text('Nom', colX.nom, doc.y, { continued: false });
+    doc.text('Prénom', colX.prenom, doc.y - doc.currentLineHeight());
+    doc.text('Naissance', colX.naissance, doc.y - doc.currentLineHeight());
+    doc.text('Catégorie', colX.categorie, doc.y - doc.currentLineHeight());
+    doc.text('Licence', colX.licence, doc.y - doc.currentLineHeight());
+    doc.moveDown(0.5);
+    doc.moveTo(40, doc.y).lineTo(550, doc.y).strokeColor('#ccc').stroke();
+    doc.moveDown(0.3);
+
+    doc.font('Helvetica').fontSize(9);
+    for (const a of adherentsList) {
+      const y = doc.y;
+      doc.text(a.lastName, colX.nom, y, { width: 110 });
+      doc.text(a.firstName, colX.prenom, y, { width: 110 });
+      doc.text(a.birthDate.toLocaleDateString('fr-FR'), colX.naissance, y, { width: 80 });
+      doc.text(a.ageCategory ?? '—', colX.categorie, y, { width: 90 });
+      doc.text(a.licenceFFLDA ?? '—', colX.licence, y, { width: 80 });
+      doc.moveDown(0.6);
+      if (doc.y > 760) doc.addPage();
+    }
+
+    doc.end();
+    return donePromise;
+  }
+
+  // ── Génère un export Excel de la liste des adhérents du club ────────────
+  async exportExcel(clubId: string, currentUser: CurrentUser): Promise<Buffer> {
+    const roleInClub = await this.clubsService.getRoleInClub(clubId, currentUser);
+    if (!STAFF_ROLES.includes(roleInClub)) {
+      throw new ForbiddenException("Seul le staff peut exporter la liste des adhérents");
+    }
+
+    const club = await this.prisma.club.findUnique({ where: { id: clubId } });
+    const adherentsList = await this.prisma.adherent.findMany({
+      where: { clubId, status: { not: 'ARCHIVED' } },
+      orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
+    });
+
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Adhérents');
+
+    sheet.columns = [
+      { header: 'Nom', key: 'lastName', width: 20 },
+      { header: 'Prénom', key: 'firstName', width: 20 },
+      { header: 'Date de naissance', key: 'birthDate', width: 18 },
+      { header: 'Catégorie', key: 'ageCategory', width: 15 },
+      { header: 'N° Licence FFLDA', key: 'licenceFFLDA', width: 18 },
+      { header: 'Statut', key: 'status', width: 14 },
+    ];
+    sheet.getRow(1).font = { bold: true };
+
+    for (const a of adherentsList) {
+      sheet.addRow({
+        lastName: a.lastName,
+        firstName: a.firstName,
+        birthDate: a.birthDate.toLocaleDateString('fr-FR'),
+        ageCategory: a.ageCategory ?? '—',
+        licenceFFLDA: a.licenceFFLDA ?? '—',
+        status: a.status,
+      });
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    return Buffer.from(buffer);
   }
 }
