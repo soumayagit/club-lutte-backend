@@ -4,7 +4,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ApiTags, ApiBearerAuth, ApiConsumes } from '@nestjs/swagger';
 import { ClubsService } from './clubs.service';
-import { CreateClubDto, JoinClubDto, UpdateMemberRoleDto } from './dto/club.dto';
+import { CreateClubDto, JoinClubDto, UpdateMemberRoleDto, UpdateClubDto } from './dto/club.dto';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
@@ -28,6 +28,15 @@ export class ClubsController {
   @Get(':clubId')
   findOne(@Param('clubId') clubId: string, @CurrentUser() user: any) {
     return this.clubsService.findOne(clubId, user);
+  }
+
+  @Patch(':clubId')
+  updateInfo(
+    @Param('clubId') clubId: string,
+    @Body() dto: UpdateClubDto,
+    @CurrentUser() user: any,
+  ) {
+    return this.clubsService.updateInfo(clubId, dto, user);
   }
 
   @Post('join')

@@ -41,3 +41,25 @@ export class UpdateMemberRoleDto {
   @IsIn(['ADHERENT', 'TUTEUR', 'COACH', 'BUREAU', 'TRESORIER', 'SECRETAIRE', 'ADMIN'])
   role: string;
 }
+
+export class UpdateClubDto {
+  @ApiPropertyOptional({ example: 'RS Étoile Lutte' })
+  @IsOptional()
+  @IsString()
+  nom?: string;
+
+  @ApiPropertyOptional({ example: 'Tunis' })
+  @IsOptional()
+  @IsString()
+  ville?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ example: 'FFLDA' })
+  @IsOptional()
+  @IsString()
+  federation?: string;
+}

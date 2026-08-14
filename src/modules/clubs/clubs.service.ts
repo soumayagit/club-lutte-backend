@@ -229,4 +229,22 @@ export class ClubsService {
       data: { role: newRole as any },
     });
   }
+
+  // ── Modifie les infos générales du club — réservé au staff ──────────────
+  async updateInfo(clubId: string, dto: any, currentUser: CurrentUser) {
+    const role = await this.getRoleInClub(clubId, currentUser);
+    if (!['BUREAU', 'ADMIN', 'COACH', 'SECRETAIRE', 'TRESORIER'].includes(role)) {
+      throw new ForbiddenException('Seul le staff du club peut modifier ses informations');
+    }
+
+    return this.prisma.club.update({
+      where: { id: clubId },
+      data: {
+        ...(dto.nom !== undefined && { nom: dto.nom }),
+        ...(dto.ville !== undefined && { ville: dto.ville }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.federation !== undefined && { federation: dto.federation }),
+      },
+    });
+  }
 }
