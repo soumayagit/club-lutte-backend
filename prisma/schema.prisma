@@ -50,7 +50,7 @@ model Club {
   logoUrl       String?
   description   String?
   federation    String?  // ex: "FFLDA"
-inviteCode    String   @unique // code court partagé pour rejoindre le club, ex: "ETOILE-2K7X"
+  inviteCode    String   @unique // code court partagé pour rejoindre le club, ex: "ETOILE-2K7X"
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -104,6 +104,7 @@ model Adherent {
   tuteur        User?    @relation("TuteurAdherents", fields: [tuteurId], references: [id])
 
   documents     Document[]
+  cotisations   Cotisation[]
 
   // La licence FFLDA doit être unique DANS un club, pas globalement
   // (deux clubs différents pourraient théoriquement avoir un souci de numérotation externe)
@@ -123,4 +124,22 @@ model Document {
   adherent      Adherent @relation(fields: [adherentId], references: [id], onDelete: Cascade)
 
   @@map("documents")
+}
+
+model Cotisation {
+  id            String    @id @default(uuid())
+  saison        String    // ex: "2025-2026"
+  montant       Float
+  statut        String    @default("IMPAYE") // IMPAYE | PAYE | PARTIEL
+  datePaiement  DateTime?
+  moyenPaiement String?   // ex: "Espèces", "Virement", "Chèque"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  adherentId    String
+  adherent      Adherent  @relation(fields: [adherentId], references: [id], onDelete: Cascade)
+
+  // Une seule cotisation par adhérent et par saison
+  @@unique([adherentId, saison])
+  @@map("cotisations")
 }

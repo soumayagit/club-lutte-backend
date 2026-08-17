@@ -6,20 +6,18 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AdherentsModule = void 0;
+exports.CotisationsModule = void 0;
 const common_1 = require("@nestjs/common");
-const adherents_service_1 = require("./adherents.service");
-const adherents_controller_1 = require("./adherents.controller");
+const cotisations_service_1 = require("./cotisations.service");
+const cotisations_controller_1 = require("./cotisations.controller");
 const clubs_module_1 = require("../clubs/clubs.module");
-const cotisations_module_1 = require("../cotisations/cotisations.module");
-let AdherentsModule = class AdherentsModule {
+let CotisationsModule = class CotisationsModule {
 };
-exports.AdherentsModule = AdherentsModule;
-exports.AdherentsModule = AdherentsModule = __decorate([
+exports.CotisationsModule = CotisationsModule;
+exports.CotisationsModule = CotisationsModule = __decorate([
     (0, common_1.Module)({
-        imports: [clubs_module_1.ClubsModule, cotisations_module_1.CotisationsModule],
-        controllers: [adherents_controller_1.AdherentsController],
-        providers: [adherents_service_1.AdherentsService],
-        exports: [adherents_service_1.AdherentsService],
+        imports: [clubs_module_1.ClubsModule],
+        controllers: [cotisations_controller_1.CotisationsController],
+        providers: [cotisations_service_1.CotisationsService],
     })
-], AdherentsModule);
+], CotisationsModule);
