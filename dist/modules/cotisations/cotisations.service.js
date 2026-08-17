@@ -46,6 +46,7 @@ let CotisationsService = class CotisationsService {
                 saison: dto.saison,
                 montant: dto.montant,
                 statut: 'IMPAYE',
+                echeance: dto.echeance ? new Date(dto.echeance) : undefined,
             },
         });
     }
@@ -66,8 +67,11 @@ let CotisationsService = class CotisationsService {
             saison: c.saison,
             montant: c.montant,
             statut: c.statut,
+            echeance: c.echeance,
             datePaiement: c.datePaiement,
             moyenPaiement: c.moyenPaiement,
+            prestataire: c.prestataire,
+            recuUrl: c.recuUrl,
         }));
     }
     async update(cotisationId, dto, currentUser) {
@@ -82,11 +86,13 @@ let CotisationsService = class CotisationsService {
                 ...(dto.statut !== undefined && { statut: dto.statut }),
                 ...(dto.montant !== undefined && { montant: dto.montant }),
                 ...(dto.moyenPaiement !== undefined && { moyenPaiement: dto.moyenPaiement }),
+                ...(dto.prestataire !== undefined && { prestataire: dto.prestataire }),
+                ...(dto.echeance !== undefined && { echeance: new Date(dto.echeance) }),
                 ...(dto.statut === 'PAYE' && { datePaiement: new Date() }),
             },
         });
     }
-    async generateForClub(clubId, saison, montant, currentUser) {
+    async generateForClub(clubId, saison, montant, currentUser, echeance) {
         const role = await this.clubsService.getRoleInClub(clubId, currentUser);
         if (!STAFF_ROLES.includes(role)) {
             throw new common_1.ForbiddenException('Seul le staff du club peut générer les cotisations');
@@ -101,7 +107,13 @@ let CotisationsService = class CotisationsService {
             });
             if (!existing) {
                 await this.prisma.cotisation.create({
-                    data: { adherentId: a.id, saison, montant, statut: 'IMPAYE' },
+                    data: {
+                        adherentId: a.id,
+                        saison,
+                        montant,
+                        statut: 'IMPAYE',
+                        echeance: echeance ? new Date(echeance) : undefined,
+                    },
                 });
                 created++;
             }

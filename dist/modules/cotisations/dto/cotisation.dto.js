@@ -16,6 +16,7 @@ const STATUT_VALUES = ['IMPAYE', 'PAYE', 'PARTIEL'];
 class CreateCotisationDto {
     saison;
     montant;
+    echeance;
 }
 exports.CreateCotisationDto = CreateCotisationDto;
 __decorate([
@@ -24,14 +25,22 @@ __decorate([
     __metadata("design:type", String)
 ], CreateCotisationDto.prototype, "saison", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 120 }),
+    (0, swagger_1.ApiProperty)({ example: 30 }),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateCotisationDto.prototype, "montant", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '2026-10-15', description: 'Date limite de paiement' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], CreateCotisationDto.prototype, "echeance", void 0);
 class UpdateCotisationDto {
     statut;
     montant;
     moyenPaiement;
+    prestataire;
+    echeance;
 }
 exports.UpdateCotisationDto = UpdateCotisationDto;
 __decorate([
@@ -41,14 +50,26 @@ __decorate([
     __metadata("design:type", String)
 ], UpdateCotisationDto.prototype, "statut", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 120 }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 30 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], UpdateCotisationDto.prototype, "montant", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 'Espèces' }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Espèces', description: 'Mode de paiement' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateCotisationDto.prototype, "moyenPaiement", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Virement bancaire', description: 'Prestataire (si paiement en ligne)' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateCotisationDto.prototype, "prestataire", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '2026-10-15' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], UpdateCotisationDto.prototype, "echeance", void 0);

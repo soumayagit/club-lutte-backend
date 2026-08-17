@@ -18,7 +18,6 @@ export class CotisationsService {
     private clubsService: ClubsService,
   ) {}
 
-  // ── Vérifie l'accès staff au club de cet adhérent ────────────────────────
   private async assertStaffAccess(adherentId: string, currentUser: CurrentUser): Promise<string> {
     const adherent = await this.prisma.adherent.findUnique({ where: { id: adherentId } });
     if (!adherent) {
@@ -31,7 +30,6 @@ export class CotisationsService {
     return adherent.clubId;
   }
 
-  // ── Crée une cotisation (IMPAYÉ par défaut) pour un adhérent, une saison ──
   async create(adherentId: string, dto: CreateCotisationDto, currentUser: CurrentUser) {
     await this.assertStaffAccess(adherentId, currentUser);
 
@@ -48,11 +46,11 @@ export class CotisationsService {
         saison: dto.saison,
         montant: dto.montant,
         statut: 'IMPAYE',
+        echeance: dto.echeance ? new Date(dto.echeance) : undefined,
       },
     });
   }
 
-  // ── Liste toutes les cotisations du club pour une saison donnée ──────────
   async findByClub(clubId: string, saison: string, currentUser: CurrentUser) {
     const role = await this.clubsService.getRoleInClub(clubId, currentUser);
     if (!STAFF_ROLES.includes(role)) {
@@ -72,12 +70,14 @@ export class CotisationsService {
       saison: c.saison,
       montant: c.montant,
       statut: c.statut,
+      echeance: c.echeance,
       datePaiement: c.datePaiement,
       moyenPaiement: c.moyenPaiement,
+      prestataire: c.prestataire,
+      recuUrl: c.recuUrl,
     }));
   }
 
-  // ── Marque une cotisation comme payée (ou change son statut) ────────────
   async update(cotisationId: string, dto: UpdateCotisationDto, currentUser: CurrentUser) {
     const cotisation = await this.prisma.cotisation.findUnique({ where: { id: cotisationId } });
     if (!cotisation) {
@@ -91,14 +91,14 @@ export class CotisationsService {
         ...(dto.statut !== undefined && { statut: dto.statut }),
         ...(dto.montant !== undefined && { montant: dto.montant }),
         ...(dto.moyenPaiement !== undefined && { moyenPaiement: dto.moyenPaiement }),
+        ...(dto.prestataire !== undefined && { prestataire: dto.prestataire }),
+        ...(dto.echeance !== undefined && { echeance: new Date(dto.echeance) }),
         ...(dto.statut === 'PAYE' && { datePaiement: new Date() }),
       },
     });
   }
 
-  // ── Crée automatiquement une cotisation IMPAYÉ pour TOUS les adhérents
-  // validés du club, pour une saison donnée (pratique en début de saison) ──
-  async generateForClub(clubId: string, saison: string, montant: number, currentUser: CurrentUser) {
+  async generateForClub(clubId: string, saison: string, montant: number, currentUser: CurrentUser, echeance?: string) {
     const role = await this.clubsService.getRoleInClub(clubId, currentUser);
     if (!STAFF_ROLES.includes(role)) {
       throw new ForbiddenException('Seul le staff du club peut générer les cotisations');
@@ -115,7 +115,13 @@ export class CotisationsService {
       });
       if (!existing) {
         await this.prisma.cotisation.create({
-          data: { adherentId: a.id, saison, montant, statut: 'IMPAYE' },
+          data: {
+            adherentId: a.id,
+            saison,
+            montant,
+            statut: 'IMPAYE',
+            echeance: echeance ? new Date(echeance) : undefined,
+          },
         });
         created++;
       }

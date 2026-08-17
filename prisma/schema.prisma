@@ -131,8 +131,11 @@ model Cotisation {
   saison        String    // ex: "2025-2026"
   montant       Float
   statut        String    @default("IMPAYE") // IMPAYE | PAYE | PARTIEL
+  echeance      DateTime? // date limite de paiement
   datePaiement  DateTime?
-  moyenPaiement String?   // ex: "Espèces", "Virement", "Chèque"
+  moyenPaiement String?   // ex: "Espèces", "Virement", "Chèque" (correspond au champ "mode" du cahier des charges)
+  prestataire   String?   // ex: "Stripe", "PayPal" — si paiement en ligne
+  recuUrl       String?   // lien vers le reçu/justificatif généré
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
