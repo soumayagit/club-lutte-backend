@@ -15,8 +15,8 @@ const swagger_1 = require("@nestjs/swagger");
 const STATUT_VALUES = ['IMPAYE', 'PAYE', 'PARTIEL'];
 class CreateCotisationDto {
     saison;
-    montant;
     echeance;
+    codePromo;
 }
 exports.CreateCotisationDto = CreateCotisationDto;
 __decorate([
@@ -25,16 +25,17 @@ __decorate([
     __metadata("design:type", String)
 ], CreateCotisationDto.prototype, "saison", void 0);
 __decorate([
-    (0, swagger_1.ApiProperty)({ example: 30 }),
-    (0, class_validator_1.IsNumber)(),
-    __metadata("design:type", Number)
-], CreateCotisationDto.prototype, "montant", void 0);
-__decorate([
     (0, swagger_1.ApiPropertyOptional)({ example: '2026-10-15', description: 'Date limite de paiement' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
 ], CreateCotisationDto.prototype, "echeance", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'FAMILLE2026' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateCotisationDto.prototype, "codePromo", void 0);
 class UpdateCotisationDto {
     statut;
     montant;

@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException, NotFoundException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClubsService } from '../clubs/clubs.service';
+import { TarifsService } from '../tarifs/tarifs.service';
 import { CreateCotisationDto, UpdateCotisationDto } from './dto/cotisation.dto';
 
 interface CurrentUser {
@@ -16,6 +17,7 @@ export class CotisationsService {
   constructor(
     private prisma: PrismaService,
     private clubsService: ClubsService,
+    private tarifsService: TarifsService,
   ) {}
 
   private async assertStaffAccess(adherentId: string, currentUser: CurrentUser): Promise<string> {
@@ -30,8 +32,25 @@ export class CotisationsService {
     return adherent.clubId;
   }
 
+  // ── Vérifie que la personne peut voir/agir sur SA PROPRE cotisation ─────
+  private async assertOwnerOrStaff(adherentId: string, currentUser: CurrentUser) {
+    const adherent = await this.prisma.adherent.findUnique({ where: { id: adherentId } });
+    if (!adherent) throw new NotFoundException('Adhérent introuvable');
+    const role = await this.clubsService.getRoleInClub(adherent.clubId, currentUser);
+
+    const isOwner =
+      (role === 'ADHERENT' && adherent.userId === currentUser.id) ||
+      (role === 'TUTEUR' && adherent.tuteurId === currentUser.id);
+
+    if (!STAFF_ROLES.includes(role) && !isOwner) {
+      throw new ForbiddenException('Accès refusé à cette cotisation');
+    }
+    return adherent;
+  }
+
+  // ── Crée une cotisation avec calcul automatique du montant (tarif + réductions) ──
   async create(adherentId: string, dto: CreateCotisationDto, currentUser: CurrentUser) {
-    await this.assertStaffAccess(adherentId, currentUser);
+    const clubId = await this.assertStaffAccess(adherentId, currentUser);
 
     const existing = await this.prisma.cotisation.findUnique({
       where: { adherentId_saison: { adherentId, saison: dto.saison } },
@@ -40,11 +59,20 @@ export class CotisationsService {
       throw new ConflictException('Une cotisation existe déjà pour cette saison');
     }
 
+    const { montantBase, montantFinal, codePromoApplique } = await this.tarifsService.calculerMontant({
+      clubId,
+      saison: dto.saison,
+      adherentId,
+      codePromo: dto.codePromo,
+    });
+
     return this.prisma.cotisation.create({
       data: {
         adherentId,
         saison: dto.saison,
-        montant: dto.montant,
+        montant: montantFinal,
+        montantBase,
+        codePromoUtilise: codePromoApplique,
         statut: 'IMPAYE',
         echeance: dto.echeance ? new Date(dto.echeance) : undefined,
       },
@@ -63,21 +91,39 @@ export class CotisationsService {
       orderBy: { adherent: { lastName: 'asc' } },
     });
 
-    return cotisations.map((c) => ({
+    return cotisations.map((c) => this.toDto(c));
+  }
+
+  // ── La cotisation d'UN adhérent précis — accessible par lui-même (ou son tuteur) ──
+  async findMine(adherentId: string, saison: string, currentUser: CurrentUser) {
+    await this.assertOwnerOrStaff(adherentId, currentUser);
+    const cotisation = await this.prisma.cotisation.findUnique({
+      where: { adherentId_saison: { adherentId, saison } },
+      include: { adherent: true },
+    });
+    if (!cotisation) throw new NotFoundException('Aucune cotisation trouvée pour cette saison');
+    return this.toDto(cotisation);
+  }
+
+  private toDto(c: any) {
+    return {
       id: c.id,
       adherentId: c.adherentId,
       adherentNom: `${c.adherent.firstName} ${c.adherent.lastName}`,
       saison: c.saison,
       montant: c.montant,
+      montantBase: c.montantBase,
+      codePromoUtilise: c.codePromoUtilise,
       statut: c.statut,
       echeance: c.echeance,
       datePaiement: c.datePaiement,
       moyenPaiement: c.moyenPaiement,
       prestataire: c.prestataire,
       recuUrl: c.recuUrl,
-    }));
+    };
   }
 
+  // ── Le staff (trésorier) marque payé/partiel/en attente, avec le mode utilisé ──
   async update(cotisationId: string, dto: UpdateCotisationDto, currentUser: CurrentUser) {
     const cotisation = await this.prisma.cotisation.findUnique({ where: { id: cotisationId } });
     if (!cotisation) {
@@ -93,12 +139,15 @@ export class CotisationsService {
         ...(dto.moyenPaiement !== undefined && { moyenPaiement: dto.moyenPaiement }),
         ...(dto.prestataire !== undefined && { prestataire: dto.prestataire }),
         ...(dto.echeance !== undefined && { echeance: new Date(dto.echeance) }),
-        ...(dto.statut === 'PAYE' && { datePaiement: new Date() }),
+        ...((dto.statut === 'PAYE' || dto.statut === 'PARTIEL') && { datePaiement: new Date() }),
       },
     });
   }
 
-  async generateForClub(clubId: string, saison: string, montant: number, currentUser: CurrentUser, echeance?: string) {
+  // ── Génère automatiquement une cotisation pour chaque adhérent validé,
+  // avec le montant calculé selon le tarif de SA catégorie (plus de montant
+  // unique passé en paramètre — chacun paie selon les règles configurées) ──
+  async generateForClub(clubId: string, saison: string, currentUser: CurrentUser, echeance?: string) {
     const role = await this.clubsService.getRoleInClub(clubId, currentUser);
     if (!STAFF_ROLES.includes(role)) {
       throw new ForbiddenException('Seul le staff du club peut générer les cotisations');
@@ -109,24 +158,39 @@ export class CotisationsService {
     });
 
     let created = 0;
+    const echecs: string[] = [];
+
     for (const a of adherents) {
       const existing = await this.prisma.cotisation.findUnique({
         where: { adherentId_saison: { adherentId: a.id, saison } },
       });
-      if (!existing) {
+      if (existing) continue;
+
+      try {
+        const { montantBase, montantFinal } = await this.tarifsService.calculerMontant({
+          clubId,
+          saison,
+          adherentId: a.id,
+        });
+
         await this.prisma.cotisation.create({
           data: {
             adherentId: a.id,
             saison,
-            montant,
+            montant: montantFinal,
+            montantBase,
             statut: 'IMPAYE',
             echeance: echeance ? new Date(echeance) : undefined,
           },
         });
         created++;
+      } catch (e) {
+        // Pas de tarif configuré pour cette catégorie — on continue les autres
+        // plutôt que de bloquer toute la génération.
+        echecs.push(`${a.firstName} ${a.lastName} (${a.ageCategory ?? 'sans catégorie'})`);
       }
     }
 
-    return { created, total: adherents.length };
+    return { created, total: adherents.length, echecs };
   }
 }

@@ -8,14 +8,15 @@ export class CreateCotisationDto {
   @IsString()
   saison: string;
 
-  @ApiProperty({ example: 30 })
-  @IsNumber()
-  montant: number;
-
   @ApiPropertyOptional({ example: '2026-10-15', description: 'Date limite de paiement' })
   @IsOptional()
   @IsDateString()
   echeance?: string;
+
+  @ApiPropertyOptional({ example: 'FAMILLE2026' })
+  @IsOptional()
+  @IsString()
+  codePromo?: string;
 }
 
 export class UpdateCotisationDto {

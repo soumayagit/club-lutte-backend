@@ -56,6 +56,8 @@ model Club {
 
   memberships   ClubMembership[]
   adherents     Adherent[]
+  tarifs        TarifCotisation[]
+  codesPromo    CodePromo[]
 
   @@map("clubs")
 }
@@ -129,13 +131,15 @@ model Document {
 model Cotisation {
   id            String    @id @default(uuid())
   saison        String    // ex: "2025-2026"
-  montant       Float
+  montant       Float     // montant final, après application du tarif + réductions
+  montantBase   Float?    // montant avant réduction (pour traçabilité/affichage)
   statut        String    @default("IMPAYE") // IMPAYE | PAYE | PARTIEL
   echeance      DateTime? // date limite de paiement
   datePaiement  DateTime?
-  moyenPaiement String?   // ex: "Espèces", "Virement", "Chèque" (correspond au champ "mode" du cahier des charges)
+  moyenPaiement String?   // ex: "Espèces", "Virement", "Chèque", "Pass Sport", "Coupon"
   prestataire   String?   // ex: "Stripe", "PayPal" — si paiement en ligne
   recuUrl       String?   // lien vers le reçu/justificatif généré
+  codePromoUtilise String? // le code promo appliqué, s'il y en a un
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -145,4 +149,37 @@ model Cotisation {
   // Une seule cotisation par adhérent et par saison
   @@unique([adherentId, saison])
   @@map("cotisations")
+}
+
+model TarifCotisation {
+  id          String   @id @default(uuid())
+  saison      String   // ex: "2025-2026"
+  categorie   String?  // ex: "Poussins", "Cadets"... null = tarif par défaut (toutes catégories sans tarif spécifique)
+  montant     Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  clubId      String
+  club        Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  // Un seul tarif par catégorie et par saison, dans un club donné
+  @@unique([clubId, saison, categorie])
+  @@map("tarifs_cotisation")
+}
+
+model CodePromo {
+  id             String    @id @default(uuid())
+  code           String    // ex: "FAMILLE2026"
+  typeReduction  String    @default("POURCENTAGE") // POURCENTAGE | MONTANT
+  valeur         Float     // ex: 10 (= 10% si POURCENTAGE, ou 10€ si MONTANT)
+  actif          Boolean   @default(true)
+  dateExpiration DateTime?
+  createdAt      DateTime  @default(now())
+
+  clubId         String
+  club           Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  // Le même code ne peut pas être créé deux fois dans le même club
+  @@unique([clubId, code])
+  @@map("codes_promo")
 }

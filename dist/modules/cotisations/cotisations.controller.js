@@ -29,11 +29,14 @@ let CotisationsController = class CotisationsController {
     findByClub(clubId, saison, user) {
         return this.cotisationsService.findByClub(clubId, saison, user);
     }
+    findMine(adherentId, saison, user) {
+        return this.cotisationsService.findMine(adherentId, saison, user);
+    }
     update(cotisationId, dto, user) {
         return this.cotisationsService.update(cotisationId, dto, user);
     }
-    generateForClub(clubId, saison, montant, user) {
-        return this.cotisationsService.generateForClub(clubId, saison, montant, user);
+    generateForClub(clubId, saison, echeance, user) {
+        return this.cotisationsService.generateForClub(clubId, saison, user, echeance);
     }
 };
 exports.CotisationsController = CotisationsController;
@@ -57,6 +60,16 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], CotisationsController.prototype, "findByClub", null);
 __decorate([
+    (0, common_1.Get)('adherents/:adherentId/cotisations/mine'),
+    (0, swagger_1.ApiQuery)({ name: 'saison', example: '2025-2026' }),
+    __param(0, (0, common_1.Param)('adherentId')),
+    __param(1, (0, common_1.Query)('saison')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], CotisationsController.prototype, "findMine", null);
+__decorate([
     (0, common_1.Patch)('cotisations/:cotisationId'),
     __param(0, (0, common_1.Param)('cotisationId')),
     __param(1, (0, common_1.Body)()),
@@ -69,10 +82,10 @@ __decorate([
     (0, common_1.Post)('clubs/:clubId/cotisations/generate'),
     __param(0, (0, common_1.Param)('clubId')),
     __param(1, (0, common_1.Body)('saison')),
-    __param(2, (0, common_1.Body)('montant')),
+    __param(2, (0, common_1.Body)('echeance')),
     __param(3, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, Number, Object]),
+    __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], CotisationsController.prototype, "generateForClub", null);
 exports.CotisationsController = CotisationsController = __decorate([

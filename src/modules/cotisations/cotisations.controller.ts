@@ -29,6 +29,17 @@ export class CotisationsController {
     return this.cotisationsService.findByClub(clubId, saison, user);
   }
 
+  // ── Ma propre cotisation — accessible par l'adhérent ou son tuteur ──────
+  @Get('adherents/:adherentId/cotisations/mine')
+  @ApiQuery({ name: 'saison', example: '2025-2026' })
+  findMine(
+    @Param('adherentId') adherentId: string,
+    @Query('saison') saison: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.cotisationsService.findMine(adherentId, saison, user);
+  }
+
   @Patch('cotisations/:cotisationId')
   update(
     @Param('cotisationId') cotisationId: string,
@@ -38,13 +49,15 @@ export class CotisationsController {
     return this.cotisationsService.update(cotisationId, dto, user);
   }
 
+  // ── Génère pour tout le club — le montant est maintenant calculé
+  // automatiquement selon les tarifs configurés, plus besoin de le saisir ──
   @Post('clubs/:clubId/cotisations/generate')
   generateForClub(
     @Param('clubId') clubId: string,
     @Body('saison') saison: string,
-    @Body('montant') montant: number,
+    @Body('echeance') echeance: string,
     @CurrentUser() user: any,
   ) {
-    return this.cotisationsService.generateForClub(clubId, saison, montant, user);
+    return this.cotisationsService.generateForClub(clubId, saison, user, echeance);
   }
 }

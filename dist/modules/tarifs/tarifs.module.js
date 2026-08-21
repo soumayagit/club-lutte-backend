@@ -6,19 +6,19 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CotisationsModule = void 0;
+exports.TarifsModule = void 0;
 const common_1 = require("@nestjs/common");
-const cotisations_service_1 = require("./cotisations.service");
-const cotisations_controller_1 = require("./cotisations.controller");
+const tarifs_service_1 = require("./tarifs.service");
+const tarifs_controller_1 = require("./tarifs.controller");
 const clubs_module_1 = require("../clubs/clubs.module");
-const tarifs_module_1 = require("../tarifs/tarifs.module");
-let CotisationsModule = class CotisationsModule {
+let TarifsModule = class TarifsModule {
 };
-exports.CotisationsModule = CotisationsModule;
-exports.CotisationsModule = CotisationsModule = __decorate([
+exports.TarifsModule = TarifsModule;
+exports.TarifsModule = TarifsModule = __decorate([
     (0, common_1.Module)({
-        imports: [clubs_module_1.ClubsModule, tarifs_module_1.TarifsModule],
-        controllers: [cotisations_controller_1.CotisationsController],
-        providers: [cotisations_service_1.CotisationsService],
+        imports: [clubs_module_1.ClubsModule],
+        controllers: [tarifs_controller_1.TarifsController],
+        providers: [tarifs_service_1.TarifsService],
+        exports: [tarifs_service_1.TarifsService],
     })
-], CotisationsModule);
+], TarifsModule);
