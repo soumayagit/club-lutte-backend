@@ -28,22 +28,23 @@ export class TarifsService {
   // ── Définit (ou remplace) le tarif d'une catégorie pour une saison ──────
   async setTarif(clubId: string, dto: SetTarifDto, currentUser: CurrentUser) {
     await this.assertStaff(clubId, currentUser);
+    const categorie = dto.categorie ?? null;
 
-    return this.prisma.tarifCotisation.upsert({
-      where: {
-        clubId_saison_categorie: {
-          clubId,
-          saison: dto.saison,
-          categorie: (dto.categorie ?? null) as any,
-        },
-      },
-      update: { montant: dto.montant },
-      create: {
-        clubId,
-        saison: dto.saison,
-        categorie: dto.categorie ?? null,
-        montant: dto.montant,
-      },
+    // Prisma refuse `null` dans une clause where avec clé composée (@@unique) —
+    // on vérifie et crée/modifie manuellement plutôt que d'utiliser upsert().
+    const existing = await this.prisma.tarifCotisation.findFirst({
+      where: { clubId, saison: dto.saison, categorie },
+    });
+
+    if (existing) {
+      return this.prisma.tarifCotisation.update({
+        where: { id: existing.id },
+        data: { montant: dto.montant },
+      });
+    }
+
+    return this.prisma.tarifCotisation.create({
+      data: { clubId, saison: dto.saison, categorie, montant: dto.montant },
     });
   }
 
@@ -135,8 +136,10 @@ export class TarifsService {
       : null;
 
     if (!tarif) {
-      tarif = await this.prisma.tarifCotisation.findUnique({
-        where: { clubId_saison_categorie: { clubId, saison, categorie: null as any } },
+      // findFirst plutôt que findUnique — Prisma refuse `null` dans une clé
+      // composée where, mais l'accepte dans un filtre simple.
+      tarif = await this.prisma.tarifCotisation.findFirst({
+        where: { clubId, saison, categorie: null },
       });
     }
 

@@ -29,21 +29,18 @@ let TarifsService = class TarifsService {
     }
     async setTarif(clubId, dto, currentUser) {
         await this.assertStaff(clubId, currentUser);
-        return this.prisma.tarifCotisation.upsert({
-            where: {
-                clubId_saison_categorie: {
-                    clubId,
-                    saison: dto.saison,
-                    categorie: (dto.categorie ?? null),
-                },
-            },
-            update: { montant: dto.montant },
-            create: {
-                clubId,
-                saison: dto.saison,
-                categorie: dto.categorie ?? null,
-                montant: dto.montant,
-            },
+        const categorie = dto.categorie ?? null;
+        const existing = await this.prisma.tarifCotisation.findFirst({
+            where: { clubId, saison: dto.saison, categorie },
+        });
+        if (existing) {
+            return this.prisma.tarifCotisation.update({
+                where: { id: existing.id },
+                data: { montant: dto.montant },
+            });
+        }
+        return this.prisma.tarifCotisation.create({
+            data: { clubId, saison: dto.saison, categorie, montant: dto.montant },
         });
     }
     async findTarifs(clubId, saison, currentUser) {
@@ -111,8 +108,8 @@ let TarifsService = class TarifsService {
             })
             : null;
         if (!tarif) {
-            tarif = await this.prisma.tarifCotisation.findUnique({
-                where: { clubId_saison_categorie: { clubId, saison, categorie: null } },
+            tarif = await this.prisma.tarifCotisation.findFirst({
+                where: { clubId, saison, categorie: null },
             });
         }
         if (!tarif) {
