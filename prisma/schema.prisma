@@ -133,10 +133,11 @@ model Cotisation {
   saison        String    // ex: "2025-2026"
   montant       Float     // montant final, après application du tarif + réductions
   montantBase   Float?    // montant avant réduction (pour traçabilité/affichage)
+  montantVerse  Float?    // ce qui a réellement été payé (utile si statut = PARTIEL)
   statut        String    @default("IMPAYE") // IMPAYE | PAYE | PARTIEL
   echeance      DateTime? // date limite de paiement
   datePaiement  DateTime?
-  moyenPaiement String?   // ex: "Espèces", "Virement", "Chèque", "Pass Sport", "Coupon"
+  moyenPaiement String?   // ESPECES | CHEQUE | VIREMENT | PASS_SPORT | COUPON | STRIPE | PAYPAL
   prestataire   String?   // ex: "Stripe", "PayPal" — si paiement en ligne
   recuUrl       String?   // lien vers le reçu/justificatif généré
   codePromoUtilise String? // le code promo appliqué, s'il y en a un
