@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ClubsService } from '../clubs/clubs.service';
 import { TarifsService } from '../tarifs/tarifs.service';
@@ -106,6 +106,7 @@ export class CotisationsService {
   }
 
   private toDto(c: any) {
+    const resteAPayer = c.statut === 'PARTIEL' ? Math.max(0, c.montant - (c.montantVerse ?? 0)) : 0;
     return {
       id: c.id,
       adherentId: c.adherentId,
@@ -113,6 +114,8 @@ export class CotisationsService {
       saison: c.saison,
       montant: c.montant,
       montantBase: c.montantBase,
+      montantVerse: c.montantVerse,
+      resteAPayer,
       codePromoUtilise: c.codePromoUtilise,
       statut: c.statut,
       echeance: c.echeance,
@@ -131,11 +134,23 @@ export class CotisationsService {
     }
     await this.assertStaffAccess(cotisation.adherentId, currentUser);
 
+    // Si on marque "PAYE" sans préciser montantVerse, on considère que le
+    // montant total a été versé — cohérence automatique, pas besoin de le
+    // ressaisir à chaque fois pour le cas simple (le plus fréquent).
+    let montantVerse = dto.montantVerse;
+    if (dto.statut === 'PAYE' && montantVerse === undefined) {
+      montantVerse = dto.montant ?? cotisation.montant;
+    }
+    if (dto.statut === 'PARTIEL' && montantVerse === undefined) {
+      throw new BadRequestException('Le montant versé est obligatoire pour un paiement partiel');
+    }
+
     return this.prisma.cotisation.update({
       where: { id: cotisationId },
       data: {
         ...(dto.statut !== undefined && { statut: dto.statut }),
         ...(dto.montant !== undefined && { montant: dto.montant }),
+        ...(montantVerse !== undefined && { montantVerse }),
         ...(dto.moyenPaiement !== undefined && { moyenPaiement: dto.moyenPaiement }),
         ...(dto.prestataire !== undefined && { prestataire: dto.prestataire }),
         ...(dto.echeance !== undefined && { echeance: new Date(dto.echeance) }),

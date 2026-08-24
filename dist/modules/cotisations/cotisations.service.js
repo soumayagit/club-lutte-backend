@@ -96,6 +96,7 @@ let CotisationsService = class CotisationsService {
         return this.toDto(cotisation);
     }
     toDto(c) {
+        const resteAPayer = c.statut === 'PARTIEL' ? Math.max(0, c.montant - (c.montantVerse ?? 0)) : 0;
         return {
             id: c.id,
             adherentId: c.adherentId,
@@ -103,6 +104,8 @@ let CotisationsService = class CotisationsService {
             saison: c.saison,
             montant: c.montant,
             montantBase: c.montantBase,
+            montantVerse: c.montantVerse,
+            resteAPayer,
             codePromoUtilise: c.codePromoUtilise,
             statut: c.statut,
             echeance: c.echeance,
@@ -118,11 +121,19 @@ let CotisationsService = class CotisationsService {
             throw new common_1.NotFoundException('Cotisation introuvable');
         }
         await this.assertStaffAccess(cotisation.adherentId, currentUser);
+        let montantVerse = dto.montantVerse;
+        if (dto.statut === 'PAYE' && montantVerse === undefined) {
+            montantVerse = dto.montant ?? cotisation.montant;
+        }
+        if (dto.statut === 'PARTIEL' && montantVerse === undefined) {
+            throw new common_1.BadRequestException('Le montant versé est obligatoire pour un paiement partiel');
+        }
         return this.prisma.cotisation.update({
             where: { id: cotisationId },
             data: {
                 ...(dto.statut !== undefined && { statut: dto.statut }),
                 ...(dto.montant !== undefined && { montant: dto.montant }),
+                ...(montantVerse !== undefined && { montantVerse }),
                 ...(dto.moyenPaiement !== undefined && { moyenPaiement: dto.moyenPaiement }),
                 ...(dto.prestataire !== undefined && { prestataire: dto.prestataire }),
                 ...(dto.echeance !== undefined && { echeance: new Date(dto.echeance) }),
