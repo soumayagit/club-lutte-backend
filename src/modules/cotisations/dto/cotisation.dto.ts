@@ -2,6 +2,7 @@ import { IsString, IsOptional, IsNumber, IsIn, IsDateString } from 'class-valida
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 const STATUT_VALUES = ['IMPAYE', 'PAYE', 'PARTIEL'];
+const MOYEN_PAIEMENT_VALUES = ['ESPECES', 'CHEQUE', 'VIREMENT', 'PASS_SPORT', 'COUPON', 'STRIPE', 'PAYPAL'];
 
 export class CreateCotisationDto {
   @ApiProperty({ example: '2025-2026' })
@@ -30,12 +31,20 @@ export class UpdateCotisationDto {
   @IsNumber()
   montant?: number;
 
-  @ApiPropertyOptional({ example: 'Espèces', description: 'Mode de paiement' })
+  @ApiPropertyOptional({
+    description: 'Ce qui a réellement été versé — obligatoire si statut = PARTIEL',
+    example: 15,
+  })
   @IsOptional()
-  @IsString()
+  @IsNumber()
+  montantVerse?: number;
+
+  @ApiPropertyOptional({ enum: MOYEN_PAIEMENT_VALUES, example: 'ESPECES' })
+  @IsOptional()
+  @IsIn(MOYEN_PAIEMENT_VALUES)
   moyenPaiement?: string;
 
-  @ApiPropertyOptional({ example: 'Virement bancaire', description: 'Prestataire (si paiement en ligne)' })
+  @ApiPropertyOptional({ example: 'Stripe', description: 'Prestataire (si paiement en ligne)' })
   @IsOptional()
   @IsString()
   prestataire?: string;

@@ -13,6 +13,7 @@ exports.UpdateCotisationDto = exports.CreateCotisationDto = void 0;
 const class_validator_1 = require("class-validator");
 const swagger_1 = require("@nestjs/swagger");
 const STATUT_VALUES = ['IMPAYE', 'PAYE', 'PARTIEL'];
+const MOYEN_PAIEMENT_VALUES = ['ESPECES', 'CHEQUE', 'VIREMENT', 'PASS_SPORT', 'COUPON', 'STRIPE', 'PAYPAL'];
 class CreateCotisationDto {
     saison;
     echeance;
@@ -39,6 +40,7 @@ __decorate([
 class UpdateCotisationDto {
     statut;
     montant;
+    montantVerse;
     moyenPaiement;
     prestataire;
     echeance;
@@ -57,13 +59,22 @@ __decorate([
     __metadata("design:type", Number)
 ], UpdateCotisationDto.prototype, "montant", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 'Espèces', description: 'Mode de paiement' }),
+    (0, swagger_1.ApiPropertyOptional)({
+        description: 'Ce qui a réellement été versé — obligatoire si statut = PARTIEL',
+        example: 15,
+    }),
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], UpdateCotisationDto.prototype, "montantVerse", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: MOYEN_PAIEMENT_VALUES, example: 'ESPECES' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsIn)(MOYEN_PAIEMENT_VALUES),
     __metadata("design:type", String)
 ], UpdateCotisationDto.prototype, "moyenPaiement", void 0);
 __decorate([
-    (0, swagger_1.ApiPropertyOptional)({ example: 'Virement bancaire', description: 'Prestataire (si paiement en ligne)' }),
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Stripe', description: 'Prestataire (si paiement en ligne)' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
