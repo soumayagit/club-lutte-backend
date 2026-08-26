@@ -29,6 +29,49 @@ let PaymentsController = class PaymentsController {
     handleStripeWebhook(req, signature) {
         return this.paymentsService.handleStripeWebhook(signature, req.rawBody);
     }
+    createPaypalOrder(cotisationId, user) {
+        return this.paymentsService.createPaypalOrder(cotisationId, user);
+    }
+    async paypalReturn(orderId, cotisationId, res) {
+        const success = await this.paymentsService.capturePaypalOrder(orderId, cotisationId);
+        res.set('Content-Type', 'text/html');
+        res.send(this.buildResultPage(success));
+    }
+    paypalCancel(res) {
+        res.set('Content-Type', 'text/html');
+        res.send(this.buildCancelPage());
+    }
+    buildResultPage(success) {
+        const title = success ? 'Paiement confirme' : 'Le paiement a echoue';
+        const message = success
+            ? 'Tu peux fermer cette page et retourner dans l application.'
+            : 'Reessaie depuis l application.';
+        let html = '<!DOCTYPE html>';
+        html += '<html lang="fr"><head><meta charset="UTF-8"><title>Paiement</title>';
+        html += '<style>';
+        html += 'body { font-family: -apple-system, sans-serif; background: #0D1242; color: #fff; ';
+        html += 'display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }';
+        html += '.box { padding: 32px; }';
+        html += 'h1 { font-size: 22px; }';
+        html += 'p { color: #B9BEE0; font-size: 14px; }';
+        html += '</style></head><body>';
+        html += '<div class="box"><h1>' + title + '</h1><p>' + message + '</p></div>';
+        html += '</body></html>';
+        return html;
+    }
+    buildCancelPage() {
+        let html = '<!DOCTYPE html>';
+        html += '<html lang="fr"><head><meta charset="UTF-8"><title>Paiement annule</title>';
+        html += '<style>';
+        html += 'body { font-family: -apple-system, sans-serif; background: #0D1242; color: #fff; ';
+        html += 'display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }';
+        html += '.box { padding: 32px; }';
+        html += '</style></head><body>';
+        html += '<div class="box"><h1>Paiement annule</h1>';
+        html += '<p>Tu peux fermer cette page et retourner dans l application.</p></div>';
+        html += '</body></html>';
+        return html;
+    }
 };
 exports.PaymentsController = PaymentsController;
 __decorate([
@@ -49,6 +92,33 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "handleStripeWebhook", null);
+__decorate([
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.Post)('cotisations/:cotisationId/pay/paypal'),
+    __param(0, (0, common_1.Param)('cotisationId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], PaymentsController.prototype, "createPaypalOrder", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)('payments/paypal/return'),
+    __param(0, (0, common_1.Query)('token')),
+    __param(1, (0, common_1.Query)('cotisationId')),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], PaymentsController.prototype, "paypalReturn", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)('payments/paypal/cancel'),
+    __param(0, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], PaymentsController.prototype, "paypalCancel", null);
 exports.PaymentsController = PaymentsController = __decorate([
     (0, swagger_1.ApiTags)('payments'),
     (0, common_1.Controller)(),
