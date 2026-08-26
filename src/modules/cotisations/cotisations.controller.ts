@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Param, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CotisationsService } from './cotisations.service';
 import { CreateCotisationDto, UpdateCotisationDto } from './dto/cotisation.dto';
@@ -59,5 +60,33 @@ export class CotisationsController {
     @CurrentUser() user: any,
   ) {
     return this.cotisationsService.generateForClub(clubId, saison, user, echeance);
+  }
+
+  // ── Tableau de suivi financier — pour le trésorier ───────────────────────
+  @Get('clubs/:clubId/cotisations/tableau')
+  @ApiQuery({ name: 'saison', example: '2025-2026' })
+  getTableauFinancier(
+    @Param('clubId') clubId: string,
+    @Query('saison') saison: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.cotisationsService.getTableauFinancier(clubId, saison, user);
+  }
+
+  // ── Export CSV du détail des cotisations ─────────────────────────────────
+  @Get('clubs/:clubId/cotisations/export/csv')
+  @ApiQuery({ name: 'saison', example: '2025-2026' })
+  async exportCsv(
+    @Param('clubId') clubId: string,
+    @Query('saison') saison: string,
+    @CurrentUser() user: any,
+    @Res() res: Response,
+  ) {
+    const csv = await this.cotisationsService.exportCsv(clubId, saison, user);
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': 'attachment; filename="cotisations.csv"',
+    });
+    res.send('\uFEFF' + csv); // BOM pour qu'Excel affiche correctement les accents
   }
 }

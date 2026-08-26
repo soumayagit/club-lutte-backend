@@ -38,6 +38,17 @@ let CotisationsController = class CotisationsController {
     generateForClub(clubId, saison, echeance, user) {
         return this.cotisationsService.generateForClub(clubId, saison, user, echeance);
     }
+    getTableauFinancier(clubId, saison, user) {
+        return this.cotisationsService.getTableauFinancier(clubId, saison, user);
+    }
+    async exportCsv(clubId, saison, user, res) {
+        const csv = await this.cotisationsService.exportCsv(clubId, saison, user);
+        res.set({
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="cotisations.csv"',
+        });
+        res.send('\uFEFF' + csv);
+    }
 };
 exports.CotisationsController = CotisationsController;
 __decorate([
@@ -88,6 +99,27 @@ __decorate([
     __metadata("design:paramtypes", [String, String, String, Object]),
     __metadata("design:returntype", void 0)
 ], CotisationsController.prototype, "generateForClub", null);
+__decorate([
+    (0, common_1.Get)('clubs/:clubId/cotisations/tableau'),
+    (0, swagger_1.ApiQuery)({ name: 'saison', example: '2025-2026' }),
+    __param(0, (0, common_1.Param)('clubId')),
+    __param(1, (0, common_1.Query)('saison')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], CotisationsController.prototype, "getTableauFinancier", null);
+__decorate([
+    (0, common_1.Get)('clubs/:clubId/cotisations/export/csv'),
+    (0, swagger_1.ApiQuery)({ name: 'saison', example: '2025-2026' }),
+    __param(0, (0, common_1.Param)('clubId')),
+    __param(1, (0, common_1.Query)('saison')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __param(3, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], CotisationsController.prototype, "exportCsv", null);
 exports.CotisationsController = CotisationsController = __decorate([
     (0, swagger_1.ApiTags)('cotisations'),
     (0, swagger_1.ApiBearerAuth)(),

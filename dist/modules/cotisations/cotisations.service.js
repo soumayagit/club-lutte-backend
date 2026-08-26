@@ -181,6 +181,74 @@ let CotisationsService = class CotisationsService {
         }
         return { created, total: adherents.length, echecs };
     }
+    async getTableauFinancier(clubId, saison, currentUser) {
+        const role = await this.clubsService.getRoleInClub(clubId, currentUser);
+        if (!STAFF_ROLES.includes(role)) {
+            throw new common_1.ForbiddenException('Seul le staff du club peut voir le suivi financier');
+        }
+        const cotisations = await this.prisma.cotisation.findMany({
+            where: { saison, adherent: { clubId } },
+        });
+        let totalAttendu = 0;
+        let totalEncaisse = 0;
+        let totalRestant = 0;
+        let nbPaye = 0;
+        let nbImpaye = 0;
+        let nbPartiel = 0;
+        for (const c of cotisations) {
+            totalAttendu += c.montant;
+            if (c.statut === 'PAYE') {
+                totalEncaisse += c.montant;
+                nbPaye++;
+            }
+            else if (c.statut === 'PARTIEL') {
+                const verse = c.montantVerse ?? 0;
+                totalEncaisse += verse;
+                totalRestant += c.montant - verse;
+                nbPartiel++;
+            }
+            else {
+                totalRestant += c.montant;
+                nbImpaye++;
+            }
+        }
+        return {
+            saison,
+            totalAttendu: Math.round(totalAttendu * 100) / 100,
+            totalEncaisse: Math.round(totalEncaisse * 100) / 100,
+            totalRestant: Math.round(totalRestant * 100) / 100,
+            nbTotal: cotisations.length,
+            nbPaye,
+            nbImpaye,
+            nbPartiel,
+        };
+    }
+    async exportCsv(clubId, saison, currentUser) {
+        const role = await this.clubsService.getRoleInClub(clubId, currentUser);
+        if (!STAFF_ROLES.includes(role)) {
+            throw new common_1.ForbiddenException('Seul le staff du club peut exporter les cotisations');
+        }
+        const cotisations = await this.prisma.cotisation.findMany({
+            where: { saison, adherent: { clubId } },
+            include: { adherent: true },
+            orderBy: { adherent: { lastName: 'asc' } },
+        });
+        const lignes = ['Nom,Prenom,Montant,MontantVerse,Statut,MoyenPaiement,DatePaiement,Echeance'];
+        for (const c of cotisations) {
+            const ligne = [
+                c.adherent.lastName,
+                c.adherent.firstName,
+                c.montant.toFixed(2),
+                (c.montantVerse ?? '').toString(),
+                c.statut,
+                c.moyenPaiement ?? '',
+                c.datePaiement ? c.datePaiement.toISOString().split('T')[0] : '',
+                c.echeance ? c.echeance.toISOString().split('T')[0] : '',
+            ].join(',');
+            lignes.push(ligne);
+        }
+        return lignes.join('\n');
+    }
 };
 exports.CotisationsService = CotisationsService;
 exports.CotisationsService = CotisationsService = __decorate([
