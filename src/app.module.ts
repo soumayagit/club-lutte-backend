@@ -9,6 +9,7 @@ import { ClubsModule } from './modules/clubs/clubs.module';
 import { AdherentsModule } from './modules/adherents/adherents.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     ClubsModule,
     AdherentsModule,
     DocumentsModule,
+    PaymentsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
