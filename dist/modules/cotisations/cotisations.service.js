@@ -141,7 +141,7 @@ let CotisationsService = class CotisationsService {
             },
         });
     }
-    async generateForClub(clubId, saison, currentUser, echeance) {
+    async generateForClub(clubId, saison, currentUser, echeance, nombreEcheances = 1) {
         const role = await this.clubsService.getRoleInClub(clubId, currentUser);
         if (!STAFF_ROLES.includes(role)) {
             throw new common_1.ForbiddenException('Seul le staff du club peut générer les cotisations');
@@ -151,6 +151,7 @@ let CotisationsService = class CotisationsService {
         });
         let created = 0;
         const echecs = [];
+        const dateDepart = echeance ? new Date(echeance) : new Date();
         for (const a of adherents) {
             const existing = await this.prisma.cotisation.findUnique({
                 where: { adherentId_saison: { adherentId: a.id, saison } },
@@ -163,16 +164,40 @@ let CotisationsService = class CotisationsService {
                     saison,
                     adherentId: a.id,
                 });
-                await this.prisma.cotisation.create({
+                const cotisation = await this.prisma.cotisation.create({
                     data: {
                         adherentId: a.id,
                         saison,
                         montant: montantFinal,
                         montantBase,
                         statut: 'IMPAYE',
-                        echeance: echeance ? new Date(echeance) : undefined,
+                        echeance: nombreEcheances <= 1 && echeance ? new Date(echeance) : undefined,
+                        paiementEnPlusieursFois: nombreEcheances > 1,
                     },
                 });
+                if (nombreEcheances > 1) {
+                    const montantParEcheance = Math.floor((montantFinal / nombreEcheances) * 100) / 100;
+                    let montantRestant = montantFinal;
+                    for (let i = 1; i <= nombreEcheances; i++) {
+                        const estDerniere = i === nombreEcheances;
+                        const montantCetteEcheance = estDerniere
+                            ? Math.round(montantRestant * 100) / 100
+                            : montantParEcheance;
+                        montantRestant -= montantCetteEcheance;
+                        const dateEcheance = new Date(dateDepart);
+                        dateEcheance.setMonth(dateEcheance.getMonth() + (i - 1));
+                        await this.prisma.echeancePaiement.create({
+                            data: {
+                                cotisationId: cotisation.id,
+                                numero: i,
+                                montant: montantCetteEcheance,
+                                dateEcheance,
+                                statut: 'IMPAYE',
+                            },
+                        });
+                    }
+                }
+                created++;
                 created++;
             }
             catch (e) {
@@ -248,6 +273,54 @@ let CotisationsService = class CotisationsService {
             lignes.push(ligne);
         }
         return lignes.join('\n');
+    }
+    async findEcheances(cotisationId, currentUser) {
+        const cotisation = await this.prisma.cotisation.findUnique({
+            where: { id: cotisationId },
+            include: { adherent: true },
+        });
+        if (!cotisation)
+            throw new common_1.NotFoundException("Cotisation introuvable");
+        const role = await this.clubsService.getRoleInClub(cotisation.adherent.clubId, currentUser);
+        const isOwner = (role === 'ADHERENT' && cotisation.adherent.userId === currentUser.id) ||
+            (role === 'TUTEUR' && cotisation.adherent.tuteurId === currentUser.id);
+        if (!STAFF_ROLES.includes(role) && !isOwner) {
+            throw new common_1.ForbiddenException('Accès refusé à ces échéances');
+        }
+        return this.prisma.echeancePaiement.findMany({
+            where: { cotisationId },
+            orderBy: { numero: 'asc' },
+        });
+    }
+    async marquerEcheancePayee(echeanceId, moyenPaiement, currentUser) {
+        const echeance = await this.prisma.echeancePaiement.findUnique({
+            where: { id: echeanceId },
+            include: { cotisation: { include: { adherent: true } } },
+        });
+        if (!echeance)
+            throw new common_1.NotFoundException("Échéance introuvable");
+        const role = await this.clubsService.getRoleInClub(echeance.cotisation.adherent.clubId, currentUser);
+        if (!STAFF_ROLES.includes(role)) {
+            throw new common_1.ForbiddenException('Seul le staff du club peut marquer une échéance payée');
+        }
+        await this.prisma.echeancePaiement.update({
+            where: { id: echeanceId },
+            data: { statut: 'PAYE', datePaiement: new Date(), moyenPaiement },
+        });
+        const toutesEcheances = await this.prisma.echeancePaiement.findMany({
+            where: { cotisationId: echeance.cotisationId },
+        });
+        const toutesPayees = toutesEcheances.every((e) => e.statut === 'PAYE' || e.id === echeanceId);
+        const montantVerseTotal = toutesEcheances.reduce((sum, e) => sum + (e.id === echeanceId || e.statut === 'PAYE' ? e.montant : 0), 0);
+        await this.prisma.cotisation.update({
+            where: { id: echeance.cotisationId },
+            data: {
+                statut: toutesPayees ? 'PAYE' : 'PARTIEL',
+                montantVerse: montantVerseTotal,
+                ...(toutesPayees && { datePaiement: new Date() }),
+            },
+        });
+        return { success: true };
     }
 };
 exports.CotisationsService = CotisationsService;

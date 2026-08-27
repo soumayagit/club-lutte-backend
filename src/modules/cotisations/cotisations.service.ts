@@ -162,7 +162,13 @@ export class CotisationsService {
   // ── Génère automatiquement une cotisation pour chaque adhérent validé,
   // avec le montant calculé selon le tarif de SA catégorie (plus de montant
   // unique passé en paramètre — chacun paie selon les règles configurées) ──
-  async generateForClub(clubId: string, saison: string, currentUser: CurrentUser, echeance?: string) {
+  async generateForClub(
+    clubId: string,
+    saison: string,
+    currentUser: CurrentUser,
+    echeance?: string,
+    nombreEcheances: number = 1,
+  ) {
     const role = await this.clubsService.getRoleInClub(clubId, currentUser);
     if (!STAFF_ROLES.includes(role)) {
       throw new ForbiddenException('Seul le staff du club peut générer les cotisations');
@@ -174,6 +180,7 @@ export class CotisationsService {
 
     let created = 0;
     const echecs: string[] = [];
+    const dateDepart = echeance ? new Date(echeance) : new Date();
 
     for (const a of adherents) {
       const existing = await this.prisma.cotisation.findUnique({
@@ -188,16 +195,48 @@ export class CotisationsService {
           adherentId: a.id,
         });
 
-        await this.prisma.cotisation.create({
+        const cotisation = await this.prisma.cotisation.create({
           data: {
             adherentId: a.id,
             saison,
             montant: montantFinal,
             montantBase,
             statut: 'IMPAYE',
-            echeance: echeance ? new Date(echeance) : undefined,
+            echeance: nombreEcheances <= 1 && echeance ? new Date(echeance) : undefined,
+            paiementEnPlusieursFois: nombreEcheances > 1,
           },
         });
+
+        // ── Si le club active le paiement en plusieurs fois, on répartit
+        // le montant en N échéances égales, espacées d'un mois chacune —
+        // le dernier montant absorbe l'arrondi pour que le total soit exact.
+        if (nombreEcheances > 1) {
+          const montantParEcheance = Math.floor((montantFinal / nombreEcheances) * 100) / 100;
+          let montantRestant = montantFinal;
+
+          for (let i = 1; i <= nombreEcheances; i++) {
+            const estDerniere = i === nombreEcheances;
+            const montantCetteEcheance = estDerniere
+              ? Math.round(montantRestant * 100) / 100
+              : montantParEcheance;
+            montantRestant -= montantCetteEcheance;
+
+            const dateEcheance = new Date(dateDepart);
+            dateEcheance.setMonth(dateEcheance.getMonth() + (i - 1));
+
+            await this.prisma.echeancePaiement.create({
+              data: {
+                cotisationId: cotisation.id,
+                numero: i,
+                montant: montantCetteEcheance,
+                dateEcheance,
+                statut: 'IMPAYE',
+              },
+            });
+          }
+        }
+
+        created++;
         created++;
       } catch (e) {
         // Pas de tarif configuré pour cette catégorie — on continue les autres
@@ -288,5 +327,73 @@ export class CotisationsService {
     }
 
     return lignes.join('\n');
+  }
+
+  // ── Liste les échéances d'une cotisation (staff ou le propriétaire) ─────
+  async findEcheances(cotisationId: string, currentUser: CurrentUser) {
+    const cotisation = await this.prisma.cotisation.findUnique({
+      where: { id: cotisationId },
+      include: { adherent: true },
+    });
+    if (!cotisation) throw new NotFoundException("Cotisation introuvable");
+
+    const role = await this.clubsService.getRoleInClub(cotisation.adherent.clubId, currentUser);
+    const isOwner =
+      (role === 'ADHERENT' && cotisation.adherent.userId === currentUser.id) ||
+      (role === 'TUTEUR' && cotisation.adherent.tuteurId === currentUser.id);
+
+    if (!STAFF_ROLES.includes(role) && !isOwner) {
+      throw new ForbiddenException('Accès refusé à ces échéances');
+    }
+
+    return this.prisma.echeancePaiement.findMany({
+      where: { cotisationId },
+      orderBy: { numero: 'asc' },
+    });
+  }
+
+  // ── Marque UNE échéance comme payée — réservé au staff (trésorier) ───────
+  // Recalcule automatiquement le statut global de la cotisation parente.
+  async marquerEcheancePayee(
+    echeanceId: string,
+    moyenPaiement: string,
+    currentUser: CurrentUser,
+  ) {
+    const echeance = await this.prisma.echeancePaiement.findUnique({
+      where: { id: echeanceId },
+      include: { cotisation: { include: { adherent: true } } },
+    });
+    if (!echeance) throw new NotFoundException("Échéance introuvable");
+
+    const role = await this.clubsService.getRoleInClub(echeance.cotisation.adherent.clubId, currentUser);
+    if (!STAFF_ROLES.includes(role)) {
+      throw new ForbiddenException('Seul le staff du club peut marquer une échéance payée');
+    }
+
+    await this.prisma.echeancePaiement.update({
+      where: { id: echeanceId },
+      data: { statut: 'PAYE', datePaiement: new Date(), moyenPaiement },
+    });
+
+    // ── Recalcule le statut de la cotisation parente selon l'ensemble des échéances ──
+    const toutesEcheances = await this.prisma.echeancePaiement.findMany({
+      where: { cotisationId: echeance.cotisationId },
+    });
+    const toutesPayees = toutesEcheances.every((e) => e.statut === 'PAYE' || e.id === echeanceId);
+    const montantVerseTotal = toutesEcheances.reduce(
+      (sum, e) => sum + (e.id === echeanceId || e.statut === 'PAYE' ? e.montant : 0),
+      0,
+    );
+
+    await this.prisma.cotisation.update({
+      where: { id: echeance.cotisationId },
+      data: {
+        statut: toutesPayees ? 'PAYE' : 'PARTIEL',
+        montantVerse: montantVerseTotal,
+        ...(toutesPayees && { datePaiement: new Date() }),
+      },
+    });
+
+    return { success: true };
   }
 }

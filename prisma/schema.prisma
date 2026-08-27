@@ -135,21 +135,41 @@ model Cotisation {
   montantBase   Float?    // montant avant réduction (pour traçabilité/affichage)
   montantVerse  Float?    // ce qui a réellement été payé (utile si statut = PARTIEL)
   statut        String    @default("IMPAYE") // IMPAYE | PAYE | PARTIEL
-  echeance      DateTime? // date limite de paiement
+  echeance      DateTime? // date limite de paiement (si paiement en une fois)
   datePaiement  DateTime?
   moyenPaiement String?   // ESPECES | CHEQUE | VIREMENT | PASS_SPORT | COUPON | STRIPE | PAYPAL
   prestataire   String?   // ex: "Stripe", "PayPal" — si paiement en ligne
   recuUrl       String?   // lien vers le reçu/justificatif généré
   codePromoUtilise String? // le code promo appliqué, s'il y en a un
+  paiementEnPlusieursFois Boolean @default(false) // si vrai, voir les EcheancePaiement liées
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   adherentId    String
   adherent      Adherent  @relation(fields: [adherentId], references: [id], onDelete: Cascade)
+  echeances     EcheancePaiement[]
 
   // Une seule cotisation par adhérent et par saison
   @@unique([adherentId, saison])
   @@map("cotisations")
+}
+
+// ── Une échéance individuelle, quand le paiement est fractionné (PAY-003) ──
+model EcheancePaiement {
+  id            String    @id @default(uuid())
+  numero        Int       // 1, 2, 3... l'ordre de l'échéance
+  montant       Float
+  dateEcheance  DateTime  // date limite de CETTE échéance précise
+  statut        String    @default("IMPAYE") // IMPAYE | PAYE
+  datePaiement  DateTime?
+  moyenPaiement String?
+  createdAt     DateTime  @default(now())
+
+  cotisationId  String
+  cotisation    Cotisation @relation(fields: [cotisationId], references: [id], onDelete: Cascade)
+
+  @@unique([cotisationId, numero])
+  @@map("echeances_paiement")
 }
 
 model TarifCotisation {

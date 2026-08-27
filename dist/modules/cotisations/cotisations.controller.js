@@ -35,8 +35,14 @@ let CotisationsController = class CotisationsController {
     update(cotisationId, dto, user) {
         return this.cotisationsService.update(cotisationId, dto, user);
     }
-    generateForClub(clubId, saison, echeance, user) {
-        return this.cotisationsService.generateForClub(clubId, saison, user, echeance);
+    generateForClub(clubId, saison, echeance, nombreEcheances, user) {
+        return this.cotisationsService.generateForClub(clubId, saison, user, echeance, nombreEcheances || 1);
+    }
+    findEcheances(cotisationId, user) {
+        return this.cotisationsService.findEcheances(cotisationId, user);
+    }
+    marquerEcheancePayee(echeanceId, moyenPaiement, user) {
+        return this.cotisationsService.marquerEcheancePayee(echeanceId, moyenPaiement, user);
     }
     getTableauFinancier(clubId, saison, user) {
         return this.cotisationsService.getTableauFinancier(clubId, saison, user);
@@ -94,11 +100,29 @@ __decorate([
     __param(0, (0, common_1.Param)('clubId')),
     __param(1, (0, common_1.Body)('saison')),
     __param(2, (0, common_1.Body)('echeance')),
-    __param(3, (0, current_user_decorator_1.CurrentUser)()),
+    __param(3, (0, common_1.Body)('nombreEcheances')),
+    __param(4, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String, String, Object]),
+    __metadata("design:paramtypes", [String, String, String, Number, Object]),
     __metadata("design:returntype", void 0)
 ], CotisationsController.prototype, "generateForClub", null);
+__decorate([
+    (0, common_1.Get)('cotisations/:cotisationId/echeances'),
+    __param(0, (0, common_1.Param)('cotisationId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], CotisationsController.prototype, "findEcheances", null);
+__decorate([
+    (0, common_1.Patch)('echeances/:echeanceId/payer'),
+    __param(0, (0, common_1.Param)('echeanceId')),
+    __param(1, (0, common_1.Body)('moyenPaiement')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", void 0)
+], CotisationsController.prototype, "marquerEcheancePayee", null);
 __decorate([
     (0, common_1.Get)('clubs/:clubId/cotisations/tableau'),
     (0, swagger_1.ApiQuery)({ name: 'saison', example: '2025-2026' }),

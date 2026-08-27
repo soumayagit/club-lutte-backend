@@ -57,9 +57,25 @@ export class CotisationsController {
     @Param('clubId') clubId: string,
     @Body('saison') saison: string,
     @Body('echeance') echeance: string,
+    @Body('nombreEcheances') nombreEcheances: number,
     @CurrentUser() user: any,
   ) {
-    return this.cotisationsService.generateForClub(clubId, saison, user, echeance);
+    return this.cotisationsService.generateForClub(clubId, saison, user, echeance, nombreEcheances || 1);
+  }
+
+  // ── Échéances d'une cotisation (paiement en plusieurs fois) ──────────────
+  @Get('cotisations/:cotisationId/echeances')
+  findEcheances(@Param('cotisationId') cotisationId: string, @CurrentUser() user: any) {
+    return this.cotisationsService.findEcheances(cotisationId, user);
+  }
+
+  @Patch('echeances/:echeanceId/payer')
+  marquerEcheancePayee(
+    @Param('echeanceId') echeanceId: string,
+    @Body('moyenPaiement') moyenPaiement: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.cotisationsService.marquerEcheancePayee(echeanceId, moyenPaiement, user);
   }
 
   // ── Tableau de suivi financier — pour le trésorier ───────────────────────
