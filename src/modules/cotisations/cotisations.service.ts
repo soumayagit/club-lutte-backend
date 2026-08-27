@@ -268,7 +268,10 @@ export class CotisationsService {
       orderBy: { adherent: { lastName: 'asc' } },
     });
 
-    const lignes = ['Nom,Prenom,Montant,MontantVerse,Statut,MoyenPaiement,DatePaiement,Echeance'];
+    // Point-virgule plutôt que virgule — c'est le séparateur attendu par
+    // Excel en français, sinon tout le contenu se retrouve dans une seule
+    // colonne au lieu d'être bien réparti.
+    const lignes = ['Nom;Prenom;Montant;MontantVerse;Statut;MoyenPaiement;DatePaiement;Echeance'];
 
     for (const c of cotisations) {
       const ligne = [
@@ -280,7 +283,7 @@ export class CotisationsService {
         c.moyenPaiement ?? '',
         c.datePaiement ? c.datePaiement.toISOString().split('T')[0] : '',
         c.echeance ? c.echeance.toISOString().split('T')[0] : '',
-      ].join(',');
+      ].join(';');
       lignes.push(ligne);
     }
 

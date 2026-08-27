@@ -233,7 +233,7 @@ let CotisationsService = class CotisationsService {
             include: { adherent: true },
             orderBy: { adherent: { lastName: 'asc' } },
         });
-        const lignes = ['Nom,Prenom,Montant,MontantVerse,Statut,MoyenPaiement,DatePaiement,Echeance'];
+        const lignes = ['Nom;Prenom;Montant;MontantVerse;Statut;MoyenPaiement;DatePaiement;Echeance'];
         for (const c of cotisations) {
             const ligne = [
                 c.adherent.lastName,
@@ -244,7 +244,7 @@ let CotisationsService = class CotisationsService {
                 c.moyenPaiement ?? '',
                 c.datePaiement ? c.datePaiement.toISOString().split('T')[0] : '',
                 c.echeance ? c.echeance.toISOString().split('T')[0] : '',
-            ].join(',');
+            ].join(';');
             lignes.push(ligne);
         }
         return lignes.join('\n');
