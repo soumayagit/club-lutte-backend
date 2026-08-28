@@ -90,6 +90,14 @@ model Adherent {
   ageCategory   String?
   weightKg      Float?
   status        String   @default("DRAFT")
+
+  // ── Coordonnées de l'adhérent (ou de son tuteur si mineur) ───────────────
+  email         String?
+  telephone     String?
+  adresse       String?  // numéro + rue
+  codePostal    String?
+  ville         String?
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

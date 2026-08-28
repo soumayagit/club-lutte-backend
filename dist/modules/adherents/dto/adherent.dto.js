@@ -21,6 +21,11 @@ class CreateAdherentDto {
     weightKg;
     licenceFFLDA;
     tuteurId;
+    email;
+    telephone;
+    adresse;
+    codePostal;
+    ville;
 }
 exports.CreateAdherentDto = CreateAdherentDto;
 __decorate([
@@ -62,6 +67,36 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateAdherentDto.prototype, "tuteurId", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'parent@exemple.com' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], CreateAdherentDto.prototype, "email", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '06 12 34 56 78' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateAdherentDto.prototype, "telephone", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '12 rue de la République' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateAdherentDto.prototype, "adresse", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '75001' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateAdherentDto.prototype, "codePostal", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Paris' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreateAdherentDto.prototype, "ville", void 0);
 class DraftAdherentDto {
     firstName;
     lastName;
@@ -69,6 +104,11 @@ class DraftAdherentDto {
     ageCategory;
     weightKg;
     licenceFFLDA;
+    email;
+    telephone;
+    adresse;
+    codePostal;
+    ville;
 }
 exports.DraftAdherentDto = DraftAdherentDto;
 __decorate([
@@ -107,6 +147,36 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], DraftAdherentDto.prototype, "licenceFFLDA", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], DraftAdherentDto.prototype, "email", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DraftAdherentDto.prototype, "telephone", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DraftAdherentDto.prototype, "adresse", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DraftAdherentDto.prototype, "codePostal", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], DraftAdherentDto.prototype, "ville", void 0);
 class UpdateAdherentDto {
     firstName;
     lastName;
@@ -114,6 +184,11 @@ class UpdateAdherentDto {
     ageCategory;
     weightKg;
     licenceFFLDA;
+    email;
+    telephone;
+    adresse;
+    codePostal;
+    ville;
 }
 exports.UpdateAdherentDto = UpdateAdherentDto;
 __decorate([
@@ -152,6 +227,36 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateAdherentDto.prototype, "licenceFFLDA", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEmail)(),
+    __metadata("design:type", String)
+], UpdateAdherentDto.prototype, "email", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateAdherentDto.prototype, "telephone", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateAdherentDto.prototype, "adresse", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateAdherentDto.prototype, "codePostal", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], UpdateAdherentDto.prototype, "ville", void 0);
 class UpdateStatusDto {
     status;
 }

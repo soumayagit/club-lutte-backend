@@ -113,6 +113,7 @@ let CotisationsService = class CotisationsService {
             moyenPaiement: c.moyenPaiement,
             prestataire: c.prestataire,
             recuUrl: c.recuUrl,
+            paiementEnPlusieursFois: c.paiementEnPlusieursFois ?? false,
         };
     }
     async update(cotisationId, dto, currentUser) {
