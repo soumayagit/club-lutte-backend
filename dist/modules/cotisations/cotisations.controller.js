@@ -55,6 +55,14 @@ let CotisationsController = class CotisationsController {
         });
         res.send('\uFEFF' + csv);
     }
+    async downloadRecu(cotisationId, user, res) {
+        const buffer = await this.cotisationsService.generateRecu(cotisationId, user);
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="recu.pdf"',
+        });
+        res.send(buffer);
+    }
 };
 exports.CotisationsController = CotisationsController;
 __decorate([
@@ -144,6 +152,15 @@ __decorate([
     __metadata("design:paramtypes", [String, String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], CotisationsController.prototype, "exportCsv", null);
+__decorate([
+    (0, common_1.Get)('cotisations/:cotisationId/recu'),
+    __param(0, (0, common_1.Param)('cotisationId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], CotisationsController.prototype, "downloadRecu", null);
 exports.CotisationsController = CotisationsController = __decorate([
     (0, swagger_1.ApiTags)('cotisations'),
     (0, swagger_1.ApiBearerAuth)(),

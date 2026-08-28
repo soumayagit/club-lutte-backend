@@ -323,6 +323,60 @@ let CotisationsService = class CotisationsService {
         });
         return { success: true };
     }
+    async generateRecu(cotisationId, currentUser) {
+        const cotisation = await this.prisma.cotisation.findUnique({
+            where: { id: cotisationId },
+            include: { adherent: { include: { club: true } } },
+        });
+        if (!cotisation)
+            throw new common_1.NotFoundException("Cotisation introuvable");
+        await this.assertOwnerOrStaff(cotisation.adherentId, currentUser);
+        if (cotisation.statut !== 'PAYE') {
+            throw new common_1.BadRequestException("Le reçu n'est disponible que pour une cotisation entièrement payée");
+        }
+        const PDFDocument = require('pdfkit');
+        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+        const chunks = [];
+        doc.on('data', (chunk) => chunks.push(chunk));
+        const donePromise = new Promise((resolve) => {
+            doc.on('end', () => resolve(Buffer.concat(chunks)));
+        });
+        const numeroRecu = "REC-" + cotisation.saison.replace('-', '') + "-" + cotisation.id.slice(0, 8).toUpperCase();
+        doc.fontSize(20).font('Helvetica-Bold').fillColor('#0D1242')
+            .text(cotisation.adherent.club.nom, { align: 'center' });
+        doc.fontSize(10).font('Helvetica').fillColor('#666')
+            .text('Reçu de paiement', { align: 'center' });
+        doc.moveDown(2);
+        doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#E4E6F0').stroke();
+        doc.moveDown(1);
+        doc.fontSize(10).fillColor('#000');
+        doc.text("N° de reçu : " + numeroRecu);
+        doc.text("Date d'émission : " + new Date().toLocaleDateString('fr-FR'));
+        doc.moveDown(1);
+        doc.font('Helvetica-Bold').text('Adhérent');
+        doc.font('Helvetica').text(cotisation.adherent.firstName + ' ' + cotisation.adherent.lastName);
+        doc.moveDown(1);
+        doc.font('Helvetica-Bold').text('Saison');
+        doc.font('Helvetica').text(cotisation.saison);
+        doc.moveDown(1);
+        doc.font('Helvetica-Bold').text('Montant réglé');
+        doc.font('Helvetica').fontSize(16).fillColor('#1F9D55')
+            .text(cotisation.montant.toFixed(2) + ' EUR');
+        doc.fillColor('#000').fontSize(10);
+        doc.moveDown(1);
+        doc.font('Helvetica-Bold').text('Mode de paiement');
+        doc.font('Helvetica').text(cotisation.moyenPaiement ?? 'Non précisé');
+        doc.moveDown(1);
+        doc.font('Helvetica-Bold').text('Date du paiement');
+        doc.font('Helvetica').text(cotisation.datePaiement ? cotisation.datePaiement.toLocaleDateString('fr-FR') : 'Non précisée');
+        doc.moveDown(3);
+        doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor('#E4E6F0').stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(8).fillColor('#999')
+            .text('Ce document atteste du règlement de la cotisation mentionnée ci-dessus.', { align: 'center' });
+        doc.end();
+        return donePromise;
+    }
 };
 exports.CotisationsService = CotisationsService;
 exports.CotisationsService = CotisationsService = __decorate([

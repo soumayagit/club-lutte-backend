@@ -105,4 +105,19 @@ export class CotisationsController {
     });
     res.send('\uFEFF' + csv); // BOM pour qu'Excel affiche correctement les accents
   }
+
+  // ── Reçu PDF — disponible dès que la cotisation est payée (PAY-005) ──────
+  @Get('cotisations/:cotisationId/recu')
+  async downloadRecu(
+    @Param('cotisationId') cotisationId: string,
+    @CurrentUser() user: any,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.cotisationsService.generateRecu(cotisationId, user);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="recu.pdf"',
+    });
+    res.send(buffer);
+  }
 }
