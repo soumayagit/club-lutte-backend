@@ -19,6 +19,8 @@ const adherents_module_1 = require("./modules/adherents/adherents.module");
 const documents_module_1 = require("./modules/documents/documents.module");
 const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
 const payments_module_1 = require("./modules/payments/payments.module");
+const groupes_module_1 = require("./modules/groupes/groupes.module");
+const presences_module_1 = require("./modules/presences/presences.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -36,6 +38,8 @@ exports.AppModule = AppModule = __decorate([
             adherents_module_1.AdherentsModule,
             documents_module_1.DocumentsModule,
             payments_module_1.PaymentsModule,
+            groupes_module_1.GroupesModule,
+            presences_module_1.PresencesModule,
         ],
         providers: [
             { provide: core_1.APP_GUARD, useClass: jwt_auth_guard_1.JwtAuthGuard },

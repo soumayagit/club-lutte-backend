@@ -10,7 +10,8 @@ import { AdherentsModule } from './modules/adherents/adherents.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PaymentsModule } from './modules/payments/payments.module';
-
+import { GroupesModule } from './modules/groupes/groupes.module';
+import { PresencesModule } from './modules/presences/presences.module';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
@@ -24,6 +25,8 @@ import { PaymentsModule } from './modules/payments/payments.module';
     AdherentsModule,
     DocumentsModule,
     PaymentsModule,
+    GroupesModule,
+    PresencesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },

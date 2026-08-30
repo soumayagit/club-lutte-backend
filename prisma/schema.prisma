@@ -38,6 +38,7 @@ model User {
 
   adherentsAsTuteur     Adherent[] @relation("TuteurAdherents")
   adherentProfile       Adherent[] @relation("CompteAdherent")
+  groupesEncadres       EntraineurGroupe[]
 
   @@map("users")
 }
@@ -58,6 +59,7 @@ model Club {
   adherents     Adherent[]
   tarifs        TarifCotisation[]
   codesPromo    CodePromo[]
+  groupes       Groupe[]
 
   @@map("clubs")
 }
@@ -115,6 +117,8 @@ model Adherent {
 
   documents     Document[]
   cotisations   Cotisation[]
+  groupes       MembreGroupe[]
+  presences     Presence[]
 
   // La licence FFLDA doit être unique DANS un club, pas globalement
   // (deux clubs différents pourraient théoriquement avoir un souci de numérotation externe)
@@ -211,4 +215,105 @@ model CodePromo {
   // Le même code ne peut pas être créé deux fois dans le même club
   @@unique([clubId, code])
   @@map("codes_promo")
+}
+
+// ═══════════════════════ GROUPES & PRÉSENCES (MEM-002, MEM-003) ═══════════
+
+model Groupe {
+  id            String    @id @default(uuid())
+  nom           String    // ex: "Compétiteurs Cadets"
+  categorie     String?   // catégorie d'âge concernée
+  description   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  clubId        String
+  club          Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  membres       MembreGroupe[]
+  entraineurs   EntraineurGroupe[]
+  creneaux      Creneau[]
+  seances       Seance[]
+
+  @@map("groupes")
+}
+
+// ── Un adhérent peut appartenir à plusieurs groupes ──────────────────────
+model MembreGroupe {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+
+  groupeId    String
+  groupe      Groupe   @relation(fields: [groupeId], references: [id], onDelete: Cascade)
+
+  adherentId  String
+  adherent    Adherent @relation(fields: [adherentId], references: [id], onDelete: Cascade)
+
+  @@unique([groupeId, adherentId])
+  @@map("membres_groupe")
+}
+
+// ── Un ou plusieurs entraîneurs peuvent encadrer un groupe ───────────────
+model EntraineurGroupe {
+  id          String   @id @default(uuid())
+  createdAt   DateTime @default(now())
+
+  groupeId    String
+  groupe      Groupe   @relation(fields: [groupeId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupeId, userId])
+  @@map("entraineurs_groupe")
+}
+
+// ── Créneau récurrent d'un groupe (ex: "Mardi 18h-19h30, Salle A") ───────
+model Creneau {
+  id          String   @id @default(uuid())
+  jour        Int      // 0 = lundi ... 6 = dimanche
+  heureDebut  String   // ex: "18:00"
+  heureFin    String   // ex: "19:30"
+  lieu        String?
+  createdAt   DateTime @default(now())
+
+  groupeId    String
+  groupe      Groupe   @relation(fields: [groupeId], references: [id], onDelete: Cascade)
+
+  @@map("creneaux")
+}
+
+// ── Une séance réelle, ponctuelle (générée depuis un créneau ou créée manuellement) ──
+model Seance {
+  id          String     @id @default(uuid())
+  date        DateTime
+  lieu        String?
+  annulee     Boolean    @default(false)
+  commentaire String?
+  createdAt   DateTime   @default(now())
+
+  groupeId    String
+  groupe      Groupe     @relation(fields: [groupeId], references: [id], onDelete: Cascade)
+
+  presences   Presence[]
+
+  @@map("seances")
+}
+
+// ── Le statut de présence d'UN adhérent à UNE séance ─────────────────────
+model Presence {
+  id          String   @id @default(uuid())
+  statut      String   @default("NON_RENSEIGNE") // PRESENT | ABSENT | RETARD | EXCUSE | NON_RENSEIGNE
+  commentaire String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  seanceId    String
+  seance      Seance   @relation(fields: [seanceId], references: [id], onDelete: Cascade)
+
+  adherentId  String
+  adherent    Adherent @relation(fields: [adherentId], references: [id], onDelete: Cascade)
+
+  @@unique([seanceId, adherentId])
+  @@map("presences")
 }
