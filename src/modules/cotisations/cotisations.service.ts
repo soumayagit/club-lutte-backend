@@ -445,8 +445,7 @@ export class CotisationsService {
     await this.assertOwnerOrStaff(cotisation.adherentId, currentUser);
 
     if (cotisation.statut !== 'PAYE') {
-      throw new BadRequestException('Le reçu n'est disponible que pour une cotisation entièrement payée');
-    }
+throw new BadRequestException("Le reçu n'est disponible que pour une cotisation entièrement payée");    }
 
     const PDFDocument = require('pdfkit');
     const doc = new PDFDocument({ margin: 50, size: 'A4' });

@@ -48,7 +48,16 @@ let CotisationsService = class CotisationsService {
         return adherent;
     }
     async create(adherentId, dto, currentUser) {
-        const clubId = await this.assertStaffAccess(adherentId, currentUser);
+        const adherent = await this.prisma.adherent.findUnique({ where: { id: adherentId } });
+        if (!adherent)
+            throw new common_1.NotFoundException('Adhérent introuvable');
+        const clubId = adherent.clubId;
+        const role = await this.clubsService.getRoleInClub(clubId, currentUser);
+        const isOwner = (role === 'ADHERENT' && adherent.userId === currentUser.id) ||
+            (role === 'TUTEUR' && adherent.tuteurId === currentUser.id);
+        if (!STAFF_ROLES.includes(role) && !isOwner) {
+            throw new common_1.ForbiddenException('Accès refusé');
+        }
         const existing = await this.prisma.cotisation.findUnique({
             where: { adherentId_saison: { adherentId, saison: dto.saison } },
         });
@@ -61,7 +70,7 @@ let CotisationsService = class CotisationsService {
             adherentId,
             codePromo: dto.codePromo,
         });
-        return this.prisma.cotisation.create({
+        const cotisation = await this.prisma.cotisation.create({
             data: {
                 adherentId,
                 saison: dto.saison,
@@ -70,8 +79,26 @@ let CotisationsService = class CotisationsService {
                 codePromoUtilise: codePromoApplique,
                 statut: 'IMPAYE',
                 echeance: dto.echeance ? new Date(dto.echeance) : undefined,
+                paiementEnPlusieursFois: dto.nombreEcheances > 1,
             },
         });
+        const nombreEcheances = dto.nombreEcheances || 1;
+        if (nombreEcheances > 1) {
+            const montantParEcheance = Math.floor((montantFinal / nombreEcheances) * 100) / 100;
+            let montantRestant = montantFinal;
+            const dateDepart = new Date();
+            for (let i = 1; i <= nombreEcheances; i++) {
+                const estDerniere = i === nombreEcheances;
+                const montantCetteEcheance = estDerniere ? Math.round(montantRestant * 100) / 100 : montantParEcheance;
+                montantRestant -= montantCetteEcheance;
+                const dateEcheance = new Date(dateDepart);
+                dateEcheance.setMonth(dateEcheance.getMonth() + (i - 1));
+                await this.prisma.echeancePaiement.create({
+                    data: { cotisationId: cotisation.id, numero: i, montant: montantCetteEcheance, dateEcheance, statut: 'IMPAYE' },
+                });
+            }
+        }
+        return cotisation;
     }
     async findByClub(clubId, saison, currentUser) {
         const role = await this.clubsService.getRoleInClub(clubId, currentUser);

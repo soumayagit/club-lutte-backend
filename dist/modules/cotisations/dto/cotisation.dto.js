@@ -18,6 +18,7 @@ class CreateCotisationDto {
     saison;
     echeance;
     codePromo;
+    nombreEcheances;
 }
 exports.CreateCotisationDto = CreateCotisationDto;
 __decorate([
@@ -37,6 +38,12 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateCotisationDto.prototype, "codePromo", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 3, description: 'Fractionne le paiement en N échéances (1 = en une fois)' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateCotisationDto.prototype, "nombreEcheances", void 0);
 class UpdateCotisationDto {
     statut;
     montant;
