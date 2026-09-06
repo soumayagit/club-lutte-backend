@@ -1,9 +1,89 @@
-import { IsString, IsOptional, IsNumber, IsIn, IsEmail } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsIn, IsEmail, IsBoolean } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 const STATUS_VALUES = ['DRAFT', 'SUBMITTED', 'TO_COMPLETE', 'VALIDATED', 'REFUSED', 'ARCHIVED'];
+const SEXE_VALUES = ['HOMME', 'FEMME'];
+const TYPE_ADHESION_VALUES = ['ENFANT', 'ADULTE', 'LOISIR', 'COMPETITION', 'DIRIGEANT', 'BENEVOLE', 'ESSAI'];
 
-export class CreateAdherentDto {
+// ── Champs communs réutilisés dans les 3 DTOs ci-dessous ─────────────────
+class AdherentFieldsMixin {
+  @ApiPropertyOptional({ enum: SEXE_VALUES })
+  @IsOptional()
+  @IsIn(SEXE_VALUES)
+  sexe?: string;
+
+  @ApiPropertyOptional({ example: 'Tunis' })
+  @IsOptional()
+  @IsString()
+  lieuNaissance?: string;
+
+  @ApiPropertyOptional({ example: 'Française' })
+  @IsOptional()
+  @IsString()
+  nationalite?: string;
+
+  @ApiPropertyOptional({ enum: TYPE_ADHESION_VALUES, example: 'ADULTE' })
+  @IsOptional()
+  @IsIn(TYPE_ADHESION_VALUES)
+  typeAdhesion?: string;
+
+  @ApiPropertyOptional({ example: 'Débutant' })
+  @IsOptional()
+  @IsString()
+  niveau?: string;
+
+  @ApiPropertyOptional({ example: 'Lutte libre' })
+  @IsOptional()
+  @IsString()
+  stylePratique?: string;
+
+  @ApiPropertyOptional({ example: 'Aucune' })
+  @IsOptional()
+  @IsString()
+  allergies?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  questionnaireSante?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  ancienneLicence?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  clubPrecedent?: string;
+
+  @ApiPropertyOptional({ example: 'parent@exemple.com' })
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @ApiPropertyOptional({ example: '06 12 34 56 78' })
+  @IsOptional()
+  @IsString()
+  telephone?: string;
+
+  @ApiPropertyOptional({ example: '12 rue de la République' })
+  @IsOptional()
+  @IsString()
+  adresse?: string;
+
+  @ApiPropertyOptional({ example: '75001' })
+  @IsOptional()
+  @IsString()
+  codePostal?: string;
+
+  @ApiPropertyOptional({ example: 'Paris' })
+  @IsOptional()
+  @IsString()
+  ville?: string;
+}
+
+export class CreateAdherentDto extends AdherentFieldsMixin {
   @ApiProperty()
   @IsString()
   firstName: string;
@@ -35,35 +115,41 @@ export class CreateAdherentDto {
   @IsOptional()
   @IsString()
   tuteurId?: string;
-
-  // ── Coordonnées ───────────────────────────────────────────────────────
-  @ApiPropertyOptional({ example: 'parent@exemple.com' })
-  @IsOptional()
-  @IsEmail()
-  email?: string;
-
-  @ApiPropertyOptional({ example: '06 12 34 56 78' })
-  @IsOptional()
-  @IsString()
-  telephone?: string;
-
-  @ApiPropertyOptional({ example: '12 rue de la République' })
-  @IsOptional()
-  @IsString()
-  adresse?: string;
-
-  @ApiPropertyOptional({ example: '75001' })
-  @IsOptional()
-  @IsString()
-  codePostal?: string;
-
-  @ApiPropertyOptional({ example: 'Paris' })
-  @IsOptional()
-  @IsString()
-  ville?: string;
 }
 
-export class DraftAdherentDto {
+export class DraftAdherentDto extends AdherentFieldsMixin {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @ApiPropertyOptional({ example: '2010-03-15' })
+  @IsOptional()
+  @IsString()
+  birthDate?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  ageCategory?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  weightKg?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  licenceFFLDA?: string;
+}
+
+export class UpdateAdherentDto extends AdherentFieldsMixin {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
@@ -96,85 +182,8 @@ export class DraftAdherentDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsEmail()
-  email?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  telephone?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  adresse?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  codePostal?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  ville?: string;
-}
-
-export class UpdateAdherentDto {
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  firstName?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  lastName?: string;
-
-  @ApiPropertyOptional({ example: '2010-03-15' })
-  @IsOptional()
-  @IsString()
-  birthDate?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  ageCategory?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsNumber()
-  weightKg?: number;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  licenceFFLDA?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsEmail()
-  email?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  telephone?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  adresse?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  codePostal?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  ville?: string;
+  @IsBoolean()
+  certificatMedicalOk?: boolean;
 }
 
 export class UpdateStatusDto {
