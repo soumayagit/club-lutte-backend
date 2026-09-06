@@ -18,6 +18,11 @@ export class CreateCotisationDto {
   @IsOptional()
   @IsString()
   codePromo?: string;
+
+  @ApiPropertyOptional({ example: 3, description: 'Fractionne le paiement en N échéances (1 = en une fois)' })
+  @IsOptional()
+  @IsNumber()
+  nombreEcheances?: number;
 }
 
 export class UpdateCotisationDto {

@@ -50,7 +50,19 @@ export class CotisationsService {
 
   // ── Crée une cotisation avec calcul automatique du montant (tarif + réductions) ──
   async create(adherentId: string, dto: CreateCotisationDto, currentUser: CurrentUser) {
-    const clubId = await this.assertStaffAccess(adherentId, currentUser);
+    // Le staff PEUT créer pour n'importe qui — mais un adhérent/tuteur peut
+    // aussi créer SA PROPRE cotisation (self-service via le wizard d'adhésion).
+    const adherent = await this.prisma.adherent.findUnique({ where: { id: adherentId } });
+    if (!adherent) throw new NotFoundException('Adhérent introuvable');
+    const clubId = adherent.clubId;
+
+    const role = await this.clubsService.getRoleInClub(clubId, currentUser);
+    const isOwner =
+      (role === 'ADHERENT' && adherent.userId === currentUser.id) ||
+      (role === 'TUTEUR' && adherent.tuteurId === currentUser.id);
+    if (!STAFF_ROLES.includes(role) && !isOwner) {
+      throw new ForbiddenException('Accès refusé');
+    }
 
     const existing = await this.prisma.cotisation.findUnique({
       where: { adherentId_saison: { adherentId, saison: dto.saison } },
@@ -66,7 +78,7 @@ export class CotisationsService {
       codePromo: dto.codePromo,
     });
 
-    return this.prisma.cotisation.create({
+    const cotisation = await this.prisma.cotisation.create({
       data: {
         adherentId,
         saison: dto.saison,
@@ -75,8 +87,32 @@ export class CotisationsService {
         codePromoUtilise: codePromoApplique,
         statut: 'IMPAYE',
         echeance: dto.echeance ? new Date(dto.echeance) : undefined,
+        paiementEnPlusieursFois: (dto as any).nombreEcheances > 1,
       },
     });
+
+    // ── Fractionne en plusieurs échéances si demandé (paiement en 3 fois) ──
+    const nombreEcheances = (dto as any).nombreEcheances || 1;
+    if (nombreEcheances > 1) {
+      const montantParEcheance = Math.floor((montantFinal / nombreEcheances) * 100) / 100;
+      let montantRestant = montantFinal;
+      const dateDepart = new Date();
+
+      for (let i = 1; i <= nombreEcheances; i++) {
+        const estDerniere = i === nombreEcheances;
+        const montantCetteEcheance = estDerniere ? Math.round(montantRestant * 100) / 100 : montantParEcheance;
+        montantRestant -= montantCetteEcheance;
+
+        const dateEcheance = new Date(dateDepart);
+        dateEcheance.setMonth(dateEcheance.getMonth() + (i - 1));
+
+        await this.prisma.echeancePaiement.create({
+          data: { cotisationId: cotisation.id, numero: i, montant: montantCetteEcheance, dateEcheance, statut: 'IMPAYE' },
+        });
+      }
+    }
+
+    return cotisation;
   }
 
   async findByClub(clubId: string, saison: string, currentUser: CurrentUser) {
@@ -409,7 +445,8 @@ export class CotisationsService {
     await this.assertOwnerOrStaff(cotisation.adherentId, currentUser);
 
     if (cotisation.statut !== 'PAYE') {
-throw new BadRequestException("Le reçu n'est disponible que pour une cotisation entièrement payée");    }
+      throw new BadRequestException('Le reçu n'est disponible que pour une cotisation entièrement payée');
+    }
 
     const PDFDocument = require('pdfkit');
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
