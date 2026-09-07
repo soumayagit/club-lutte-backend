@@ -262,4 +262,35 @@ export class ClubsService {
       data: { dateFin: new Date() },
     });
   }
+  // ═══════════════════════════════════════════════════════════════════════
+// Ajoute cette méthode dans clubs.service.ts (n'importe où dans la classe)
+// ═══════════════════════════════════════════════════════════════════════
+
+  // ── Statistiques globales affichées en haut de la fiche club ────────────
+  async getStats(clubId: string, currentUser: CurrentUser) {
+    await this.assertMembership(clubId, currentUser);
+
+    const adherents = await this.prisma.adherent.findMany({
+      where: { clubId, status: { not: 'ARCHIVED' } },
+    });
+
+    const total = adherents.length;
+    const nbValides = adherents.filter((a) => a.status === 'VALIDATED').length;
+    const tauxDossier = total > 0 ? Math.round((nbValides / total) * 100) : 0;
+
+    // Taux de présence moyen — calculé sur toutes les présences enregistrées
+    // (hors "non renseigné"), tous adhérents confondus.
+    const adherentIds = adherents.map((a) => a.id);
+    const presences = await this.prisma.presence.findMany({
+      where: { adherentId: { in: adherentIds }, statut: { not: 'NON_RENSEIGNE' } },
+    });
+    const nbPresent = presences.filter((p) => p.statut === 'PRESENT').length;
+    const tauxPresence = presences.length > 0 ? Math.round((nbPresent / presences.length) * 100) : 0;
+
+    return {
+      tauxPresence,
+      nbCompetitions: 0, // TODO: module Compétitions pas encore développé
+      tauxDossier,
+    };
+  }
 }

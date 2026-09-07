@@ -38,7 +38,11 @@ export class ClubsController {
   ) {
     return this.clubsService.updateInfo(clubId, dto, user);
   }
-
+  @Get(':clubId/stats')
+  getStats(@Param('clubId') clubId: string, @CurrentUser() user: any) {
+    return this.clubsService.getStats(clubId, user);
+  }
+ 
   @Post('join')
   join(@Body() dto: JoinClubDto, @CurrentUser() user: any) {
     return this.clubsService.join(dto, user);

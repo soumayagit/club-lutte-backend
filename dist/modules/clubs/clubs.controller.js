@@ -39,6 +39,9 @@ let ClubsController = class ClubsController {
     updateInfo(clubId, dto, user) {
         return this.clubsService.updateInfo(clubId, dto, user);
     }
+    getStats(clubId, user) {
+        return this.clubsService.getStats(clubId, user);
+    }
     join(dto, user) {
         return this.clubsService.join(dto, user);
     }
@@ -92,6 +95,14 @@ __decorate([
     __metadata("design:paramtypes", [String, club_dto_1.UpdateClubDto, Object]),
     __metadata("design:returntype", void 0)
 ], ClubsController.prototype, "updateInfo", null);
+__decorate([
+    (0, common_1.Get)(':clubId/stats'),
+    __param(0, (0, common_1.Param)('clubId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], ClubsController.prototype, "getStats", null);
 __decorate([
     (0, common_1.Post)('join'),
     __param(0, (0, common_1.Body)()),
