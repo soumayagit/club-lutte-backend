@@ -93,25 +93,43 @@ model Adherent {
   weightKg      Float?
   status        String   @default("DRAFT")
 
+  // ── Identité complémentaire (7.2 cahier des charges) ──────────────────
+  sexe          String?
+  lieuNaissance String?
+  nationalite   String?
+
+  // ── Type d'adhésion (7.1) ──────────────────────────────────────────────
+  typeAdhesion  String?
+
+  // ── Sportif ─────────────────────────────────────────────────────────
+  niveau        String?
+  stylePratique String?
+
+  // ── Santé ───────────────────────────────────────────────────────────
+  allergies           String?
+  questionnaireSante  String?
+  certificatMedicalOk Boolean @default(false)
+
+  // ── Administratif ───────────────────────────────────────────────────
+  ancienneLicence String?
+  clubPrecedent   String?
+
   // ── Coordonnées de l'adhérent (ou de son tuteur si mineur) ───────────────
   email         String?
   telephone     String?
-  adresse       String?  // numéro + rue
+  adresse       String?
   codePostal    String?
   ville         String?
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  // Chaque fiche adhérent appartient à un club précis
   clubId        String
   club          Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
 
-  // Compte utilisateur associé (adhérent majeur uniquement)
   userId        String?
   user          User?    @relation("CompteAdherent", fields: [userId], references: [id])
 
-  // Tuteur responsable (adhérent mineur uniquement)
   tuteurId      String?
   tuteur        User?    @relation("TuteurAdherents", fields: [tuteurId], references: [id])
 
@@ -120,8 +138,6 @@ model Adherent {
   groupes       MembreGroupe[]
   presences     Presence[]
 
-  // La licence FFLDA doit être unique DANS un club, pas globalement
-  // (deux clubs différents pourraient théoriquement avoir un souci de numérotation externe)
   @@unique([licenceFFLDA, clubId])
   @@map("adherents")
 }
