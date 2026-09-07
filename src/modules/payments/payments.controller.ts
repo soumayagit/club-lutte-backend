@@ -54,6 +54,46 @@ export class PaymentsController {
     res.set('Content-Type', 'text/html');
     res.send(this.buildCancelPage());
   }
+  // ═══════════════════════════════════════════════════════════════════════
+// Ajoute ces 2 routes dans payments.controller.ts, dans la section STRIPE
+// (juste après la route @Post('webhooks/stripe'))
+// ═══════════════════════════════════════════════════════════════════════
+
+  @Public()
+  @Get('payment-success')
+  paymentSuccess(@Res() res: Response) {
+    res.set('Content-Type', 'text/html');
+    let html = '<!DOCTYPE html>';
+    html += '<html lang="fr"><head><meta charset="UTF-8"><title>Paiement confirmé</title>';
+    html += '<style>';
+    html += 'body { font-family: -apple-system, sans-serif; background: #0D1242; color: #fff; ';
+    html += 'display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }';
+    html += '.box { padding: 32px; }';
+    html += 'h1 { font-size: 22px; }';
+    html += 'p { color: #B9BEE0; font-size: 14px; }';
+    html += '</style></head><body>';
+    html += '<div class="box"><h1>Paiement confirme</h1>';
+    html += '<p>Tu peux fermer cette page et retourner dans l application.</p></div>';
+    html += '</body></html>';
+    res.send(html);
+  }
+
+  @Public()
+  @Get('payment-cancelled')
+  paymentCancelled(@Res() res: Response) {
+    res.set('Content-Type', 'text/html');
+    let html = '<!DOCTYPE html>';
+    html += '<html lang="fr"><head><meta charset="UTF-8"><title>Paiement annule</title>';
+    html += '<style>';
+    html += 'body { font-family: -apple-system, sans-serif; background: #0D1242; color: #fff; ';
+    html += 'display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }';
+    html += '.box { padding: 32px; }';
+    html += '</style></head><body>';
+    html += '<div class="box"><h1>Paiement annule</h1>';
+    html += '<p>Tu peux fermer cette page et retourner dans l application.</p></div>';
+    html += '</body></html>';
+    res.send(html);
+  }
 
   // ── Construit la page HTML sans template literal — évite tout risque de
   // corruption de caractères lors d'un copier-coller (backticks fragiles). ──

@@ -41,6 +41,36 @@ let PaymentsController = class PaymentsController {
         res.set('Content-Type', 'text/html');
         res.send(this.buildCancelPage());
     }
+    paymentSuccess(res) {
+        res.set('Content-Type', 'text/html');
+        let html = '<!DOCTYPE html>';
+        html += '<html lang="fr"><head><meta charset="UTF-8"><title>Paiement confirmé</title>';
+        html += '<style>';
+        html += 'body { font-family: -apple-system, sans-serif; background: #0D1242; color: #fff; ';
+        html += 'display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }';
+        html += '.box { padding: 32px; }';
+        html += 'h1 { font-size: 22px; }';
+        html += 'p { color: #B9BEE0; font-size: 14px; }';
+        html += '</style></head><body>';
+        html += '<div class="box"><h1>Paiement confirme</h1>';
+        html += '<p>Tu peux fermer cette page et retourner dans l application.</p></div>';
+        html += '</body></html>';
+        res.send(html);
+    }
+    paymentCancelled(res) {
+        res.set('Content-Type', 'text/html');
+        let html = '<!DOCTYPE html>';
+        html += '<html lang="fr"><head><meta charset="UTF-8"><title>Paiement annule</title>';
+        html += '<style>';
+        html += 'body { font-family: -apple-system, sans-serif; background: #0D1242; color: #fff; ';
+        html += 'display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; text-align: center; }';
+        html += '.box { padding: 32px; }';
+        html += '</style></head><body>';
+        html += '<div class="box"><h1>Paiement annule</h1>';
+        html += '<p>Tu peux fermer cette page et retourner dans l application.</p></div>';
+        html += '</body></html>';
+        res.send(html);
+    }
     buildResultPage(success) {
         const title = success ? 'Paiement confirme' : 'Le paiement a echoue';
         const message = success
@@ -119,6 +149,22 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", void 0)
 ], PaymentsController.prototype, "paypalCancel", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)('payment-success'),
+    __param(0, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], PaymentsController.prototype, "paymentSuccess", null);
+__decorate([
+    (0, public_decorator_1.Public)(),
+    (0, common_1.Get)('payment-cancelled'),
+    __param(0, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], PaymentsController.prototype, "paymentCancelled", null);
 exports.PaymentsController = PaymentsController = __decorate([
     (0, swagger_1.ApiTags)('payments'),
     (0, common_1.Controller)(),
