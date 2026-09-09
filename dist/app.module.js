@@ -21,6 +21,7 @@ const jwt_auth_guard_1 = require("./common/guards/jwt-auth.guard");
 const payments_module_1 = require("./modules/payments/payments.module");
 const groupes_module_1 = require("./modules/groupes/groupes.module");
 const presences_module_1 = require("./modules/presences/presences.module");
+const deplacements_module_1 = require("./modules/deplacements/deplacements.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -40,6 +41,7 @@ exports.AppModule = AppModule = __decorate([
             payments_module_1.PaymentsModule,
             groupes_module_1.GroupesModule,
             presences_module_1.PresencesModule,
+            deplacements_module_1.DeplacementsModule,
         ],
         providers: [
             { provide: core_1.APP_GUARD, useClass: jwt_auth_guard_1.JwtAuthGuard },

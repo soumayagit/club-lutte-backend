@@ -12,6 +12,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { GroupesModule } from './modules/groupes/groupes.module';
 import { PresencesModule } from './modules/presences/presences.module';
+import { DeplacementsModule } from './modules/deplacements/deplacements.module';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
@@ -27,6 +28,7 @@ import { PresencesModule } from './modules/presences/presences.module';
     PaymentsModule,
     GroupesModule,
     PresencesModule,
+    DeplacementsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: JwtAuthGuard },
