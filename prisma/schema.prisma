@@ -39,7 +39,7 @@ model User {
   adherentsAsTuteur     Adherent[] @relation("TuteurAdherents")
   adherentProfile       Adherent[] @relation("CompteAdherent")
   groupesEncadres       EntraineurGroupe[]
-
+  vehiculesConduits VehiculeCovoiturage[]
   @@map("users")
 }
 
@@ -60,7 +60,7 @@ model Club {
   tarifs        TarifCotisation[]
   codesPromo    CodePromo[]
   groupes       Groupe[]
-
+  deplacements  Deplacement[]
   @@map("clubs")
 }
 
@@ -137,7 +137,8 @@ model Adherent {
   cotisations   Cotisation[]
   groupes       MembreGroupe[]
   presences     Presence[]
-
+  deplacements  ParticipantDeplacement[]
+  covoiturages  PassagerVehicule[]
   @@unique([licenceFFLDA, clubId])
   @@map("adherents")
 }
@@ -333,3 +334,84 @@ model Presence {
   @@unique([seanceId, adherentId])
   @@map("presences")
 }
+// ═══════════════════════ DÉPLACEMENTS & COVOITURAGE (TRIP-001 à TRIP-007) ═══
+
+model Deplacement {
+  id            String    @id @default(uuid())
+  titre         String    // ex: "Tournoi régional — Nancy"
+  lieu          String
+  dateDepart    DateTime
+  dateRetour    DateTime?
+  heureRdv      String?   // ex: "07:30"
+  lieuRdv       String?
+  statut        String    @default("PLANIFIE") // PLANIFIE | VALIDE | ANNULE | TERMINE
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  clubId        String
+  club          Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  // Rattachement optionnel à une compétition (module pas encore développé,
+  // la relation est prête pour plus tard).
+  competitionId String?
+
+  participants  ParticipantDeplacement[]
+  vehicules     VehiculeCovoiturage[]
+
+  @@map("deplacements")
+}
+
+// ── Un adhérent inscrit à ce déplacement (avant même d'être affecté à un
+// véhicule précis) ─────────────────────────────────────────────────────
+model ParticipantDeplacement {
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+
+  deplacementId String
+  deplacement   Deplacement @relation(fields: [deplacementId], references: [id], onDelete: Cascade)
+
+  adherentId    String
+  adherent      Adherent @relation(fields: [adherentId], references: [id], onDelete: Cascade)
+
+  @@unique([deplacementId, adherentId])
+  @@map("participants_deplacement")
+}
+
+// ── Un véhicule proposé par un conducteur pour ce déplacement ────────────
+model VehiculeCovoiturage {
+  id            String   @id @default(uuid())
+  nbPlaces      Int      // nombre de places passager (hors conducteur)
+  pointDepart   String?
+  contraintes   String?  // ex: "Pas de mineur seul", "Coffre limité"
+  createdAt     DateTime @default(now())
+
+  deplacementId String
+  deplacement   Deplacement @relation(fields: [deplacementId], references: [id], onDelete: Cascade)
+
+  conducteurId  String   // userId du conducteur (parent/bénévole/staff)
+  conducteur    User     @relation(fields: [conducteurId], references: [id])
+
+  passagers     PassagerVehicule[]
+
+  @@map("vehicules_covoiturage")
+}
+
+// ── Un adhérent affecté à un siège précis d'un véhicule ──────────────────
+model PassagerVehicule {
+  id            String   @id @default(uuid())
+  createdAt     DateTime @default(now())
+
+  vehiculeId    String
+  vehicule      VehiculeCovoiturage @relation(fields: [vehiculeId], references: [id], onDelete: Cascade)
+
+  adherentId    String
+  adherent      Adherent @relation(fields: [adherentId], references: [id], onDelete: Cascade)
+
+  // Autorisation parentale spécifique à CE déplacement — obligatoire si
+  // l'adhérent est mineur, vérifiée avant de valider le plan de transport.
+  autorisationOk Boolean @default(false)
+
+  @@unique([vehiculeId, adherentId])
+  @@map("passagers_vehicule")
+}
+
