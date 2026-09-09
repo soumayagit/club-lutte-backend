@@ -60,6 +60,32 @@ export class DeplacementsService {
     });
   }
 
+  // ── Liste les participants du déplacement, avec leur nom, et indique
+  // s'ils sont déjà affectés à un véhicule — utilisé pour proposer la
+  // liste "à affecter" côté app (TRIP-003, affectation manuelle). ────────
+  async findParticipants(deplacementId: string, currentUser: CurrentUser) {
+    const deplacement = await this.prisma.deplacement.findUnique({
+      where: { id: deplacementId },
+      include: {
+        participants: { include: { adherent: true } },
+        vehicules: { include: { passagers: true } },
+      },
+    });
+    if (!deplacement) throw new NotFoundException('Déplacement introuvable');
+    await this.clubsService.assertMembership(deplacement.clubId, currentUser);
+
+    const idsDejaAffectes = new Set(
+      deplacement.vehicules.flatMap((v) => v.passagers.map((p) => p.adherentId)),
+    );
+
+    return deplacement.participants.map((p) => ({
+      adherentId: p.adherentId,
+      nom: `${p.adherent.firstName} ${p.adherent.lastName}`,
+      isMinor: p.adherent.isMinor,
+      dejaAffecte: idsDejaAffectes.has(p.adherentId),
+    }));
+  }
+
   async update(deplacementId: string, dto: UpdateDeplacementDto, currentUser: CurrentUser) {
     const deplacement = await this.prisma.deplacement.findUnique({ where: { id: deplacementId } });
     if (!deplacement) throw new NotFoundException('Déplacement introuvable');
@@ -145,7 +171,7 @@ export class DeplacementsService {
         pointDepart: v.pointDepart,
         contraintes: v.contraintes,
         conducteurNom: `${v.conducteur.firstName} ${v.conducteur.lastName}`,
-        conducteurTelephone: estImplique ? v.conducteur.phone  : null,
+        conducteurTelephone: estImplique ? v.conducteur.phone : null,
         passagers: v.passagers.map((p) => ({
           adherentId: p.adherentId,
           nom: `${p.adherent.firstName} ${p.adherent.lastName}`,

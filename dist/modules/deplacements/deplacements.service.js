@@ -51,6 +51,25 @@ let DeplacementsService = class DeplacementsService {
             include: { participants: true, vehicules: { include: { passagers: true } } },
         });
     }
+    async findParticipants(deplacementId, currentUser) {
+        const deplacement = await this.prisma.deplacement.findUnique({
+            where: { id: deplacementId },
+            include: {
+                participants: { include: { adherent: true } },
+                vehicules: { include: { passagers: true } },
+            },
+        });
+        if (!deplacement)
+            throw new common_1.NotFoundException('Déplacement introuvable');
+        await this.clubsService.assertMembership(deplacement.clubId, currentUser);
+        const idsDejaAffectes = new Set(deplacement.vehicules.flatMap((v) => v.passagers.map((p) => p.adherentId)));
+        return deplacement.participants.map((p) => ({
+            adherentId: p.adherentId,
+            nom: `${p.adherent.firstName} ${p.adherent.lastName}`,
+            isMinor: p.adherent.isMinor,
+            dejaAffecte: idsDejaAffectes.has(p.adherentId),
+        }));
+    }
     async update(deplacementId, dto, currentUser) {
         const deplacement = await this.prisma.deplacement.findUnique({ where: { id: deplacementId } });
         if (!deplacement)

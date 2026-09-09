@@ -27,6 +27,11 @@ export class DeplacementsController {
     return this.deplacementsService.findByClub(clubId, user);
   }
 
+  @Get('deplacements/:deplacementId/participants')
+  findParticipants(@Param('deplacementId') deplacementId: string, @CurrentUser() user: any) {
+    return this.deplacementsService.findParticipants(deplacementId, user);
+  }
+
   @Patch('deplacements/:deplacementId')
   update(@Param('deplacementId') deplacementId: string, @Body() dto: UpdateDeplacementDto, @CurrentUser() user: any) {
     return this.deplacementsService.update(deplacementId, dto, user);

@@ -29,6 +29,9 @@ let DeplacementsController = class DeplacementsController {
     findByClub(clubId, user) {
         return this.deplacementsService.findByClub(clubId, user);
     }
+    findParticipants(deplacementId, user) {
+        return this.deplacementsService.findParticipants(deplacementId, user);
+    }
     update(deplacementId, dto, user) {
         return this.deplacementsService.update(deplacementId, dto, user);
     }
@@ -72,6 +75,14 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], DeplacementsController.prototype, "findByClub", null);
+__decorate([
+    (0, common_1.Get)('deplacements/:deplacementId/participants'),
+    __param(0, (0, common_1.Param)('deplacementId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], DeplacementsController.prototype, "findParticipants", null);
 __decorate([
     (0, common_1.Patch)('deplacements/:deplacementId'),
     __param(0, (0, common_1.Param)('deplacementId')),
