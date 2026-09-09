@@ -145,7 +145,7 @@ export class DeplacementsService {
         pointDepart: v.pointDepart,
         contraintes: v.contraintes,
         conducteurNom: `${v.conducteur.firstName} ${v.conducteur.lastName}`,
-        conducteurTelephone: estImplique ? v.conducteur.telephone : null,
+        conducteurTelephone: estImplique ? v.conducteur.phone  : null,
         passagers: v.passagers.map((p) => ({
           adherentId: p.adherentId,
           nom: `${p.adherent.firstName} ${p.adherent.lastName}`,
