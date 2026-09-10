@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { DeplacementsService } from './deplacements.service';
 import {
@@ -86,5 +87,19 @@ export class DeplacementsController {
   @Post('deplacements/:deplacementId/valider-transport')
   validerPlanTransport(@Param('deplacementId') deplacementId: string, @CurrentUser() user: any) {
     return this.deplacementsService.validerPlanTransport(deplacementId, user);
+  }
+
+  @Get('deplacements/:deplacementId/feuille-de-route')
+  async downloadFeuilleDeRoute(
+    @Param('deplacementId') deplacementId: string,
+    @CurrentUser() user: any,
+    @Res() res: Response,
+  ) {
+    const buffer = await this.deplacementsService.genererFeuilleDeRoute(deplacementId, user);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="feuille-de-route.pdf"',
+    });
+    res.send(buffer);
   }
 }

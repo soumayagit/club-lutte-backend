@@ -56,6 +56,14 @@ let DeplacementsController = class DeplacementsController {
     validerPlanTransport(deplacementId, user) {
         return this.deplacementsService.validerPlanTransport(deplacementId, user);
     }
+    async downloadFeuilleDeRoute(deplacementId, user, res) {
+        const buffer = await this.deplacementsService.genererFeuilleDeRoute(deplacementId, user);
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename="feuille-de-route.pdf"',
+        });
+        res.send(buffer);
+    }
 };
 exports.DeplacementsController = DeplacementsController;
 __decorate([
@@ -152,6 +160,15 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], DeplacementsController.prototype, "validerPlanTransport", null);
+__decorate([
+    (0, common_1.Get)('deplacements/:deplacementId/feuille-de-route'),
+    __param(0, (0, common_1.Param)('deplacementId')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __param(2, (0, common_1.Res)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object, Object]),
+    __metadata("design:returntype", Promise)
+], DeplacementsController.prototype, "downloadFeuilleDeRoute", null);
 exports.DeplacementsController = DeplacementsController = __decorate([
     (0, swagger_1.ApiTags)('deplacements'),
     (0, swagger_1.ApiBearerAuth)(),

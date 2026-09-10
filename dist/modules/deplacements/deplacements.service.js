@@ -206,6 +206,77 @@ let DeplacementsService = class DeplacementsService {
             data: { statut: 'VALIDE' },
         });
     }
+    async genererFeuilleDeRoute(deplacementId, currentUser) {
+        const deplacement = await this.prisma.deplacement.findUnique({
+            where: { id: deplacementId },
+            include: {
+                club: true,
+                vehicules: {
+                    include: { conducteur: true, passagers: { include: { adherent: true } } },
+                },
+            },
+        });
+        if (!deplacement)
+            throw new common_1.NotFoundException('Déplacement introuvable');
+        await this.assertStaff(deplacement.clubId, currentUser);
+        const PDFDocument = require('pdfkit');
+        const doc = new PDFDocument({ margin: 40, size: 'A4' });
+        const chunks = [];
+        doc.on('data', (chunk) => chunks.push(chunk));
+        const donePromise = new Promise((resolve) => {
+            doc.on('end', () => resolve(Buffer.concat(chunks)));
+        });
+        doc.fontSize(18).font('Helvetica-Bold').fillColor('#0D1242')
+            .text(deplacement.club.nom, { align: 'center' });
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#000')
+            .text('Feuille de route', { align: 'center' });
+        doc.fontSize(11).font('Helvetica').fillColor('#666')
+            .text(deplacement.titre, { align: 'center' });
+        doc.moveDown(1);
+        doc.fontSize(9).fillColor('#000');
+        doc.text('Lieu : ' + deplacement.lieu);
+        doc.text('Depart : ' + deplacement.dateDepart.toLocaleDateString('fr-FR') +
+            (deplacement.heureRdv ? ' a ' + deplacement.heureRdv : ''));
+        if (deplacement.lieuRdv)
+            doc.text('Point de RDV : ' + deplacement.lieuRdv);
+        doc.moveDown(1);
+        doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#E4E6F0').stroke();
+        doc.moveDown(1);
+        for (const v of deplacement.vehicules) {
+            doc.fontSize(12).font('Helvetica-Bold').fillColor('#0D1242')
+                .text('Vehicule conduit par ' + v.conducteur.firstName + ' ' + v.conducteur.lastName);
+            doc.fontSize(9).font('Helvetica').fillColor('#666')
+                .text('Telephone conducteur : ' + (v.conducteur.phone ?? 'non renseigne'));
+            if (v.pointDepart)
+                doc.text('Point de depart : ' + v.pointDepart);
+            if (v.contraintes)
+                doc.text('Contraintes : ' + v.contraintes);
+            doc.moveDown(0.5);
+            if (v.passagers.length === 0) {
+                doc.fontSize(9).fillColor('#999').text('  Aucun passager affecte');
+            }
+            else {
+                for (const p of v.passagers) {
+                    doc.fontSize(9).font('Helvetica-Bold').fillColor('#000')
+                        .text('  - ' + p.adherent.firstName + ' ' + p.adherent.lastName +
+                        (p.adherent.isMinor ? ' (mineur)' : ''));
+                    doc.font('Helvetica').fillColor('#666');
+                    if (p.adherent.telephone)
+                        doc.text('      Tel : ' + p.adherent.telephone);
+                    if (p.adherent.isMinor) {
+                        doc.text('      Autorisation parentale : ' + (p.autorisationOk ? 'OK' : 'MANQUANTE'));
+                    }
+                }
+            }
+            doc.moveDown(1);
+            doc.moveTo(40, doc.y).lineTo(555, doc.y).strokeColor('#E4E6F0').stroke();
+            doc.moveDown(1);
+        }
+        doc.fontSize(8).fillColor('#999')
+            .text('Document genere le ' + new Date().toLocaleDateString('fr-FR') + ' - usage reserve aux encadrants', { align: 'center' });
+        doc.end();
+        return donePromise;
+    }
 };
 exports.DeplacementsService = DeplacementsService;
 exports.DeplacementsService = DeplacementsService = __decorate([
