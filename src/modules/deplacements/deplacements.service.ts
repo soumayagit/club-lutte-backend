@@ -141,6 +141,11 @@ export class DeplacementsService {
     });
   }
 
+// ═══════════════════════════════════════════════════════════════════════
+// Remplace ENTIÈREMENT la méthode findVehicules() dans
+// deplacements.service.ts par celle-ci
+// ═══════════════════════════════════════════════════════════════════════
+
   async findVehicules(deplacementId: string, currentUser: CurrentUser) {
     const deplacement = await this.prisma.deplacement.findUnique({ where: { id: deplacementId } });
     if (!deplacement) throw new NotFoundException('Déplacement introuvable');
@@ -150,6 +155,23 @@ export class DeplacementsService {
       where: { deplacementId },
       include: { conducteur: true, passagers: { include: { adherent: true } } },
     });
+
+    // ── Récupère la photo de profil de chaque adhérent concerné (le
+    // document de type PHOTO le plus récent) — affichée dans les vitres
+    // du plan de voiture, à la place des simples initiales. ────────────────
+    const adherentIds = vehicules.flatMap((v) => v.passagers.map((p) => p.adherentId));
+    const photos = adherentIds.length > 0
+      ? await this.prisma.document.findMany({
+          where: { adherentId: { in: adherentIds }, type: 'PHOTO' },
+          orderBy: { createdAt: 'desc' },
+        })
+      : [];
+    const photoParAdherent = new Map<string, string>();
+    for (const doc of photos) {
+      if (!photoParAdherent.has(doc.adherentId)) {
+        photoParAdherent.set(doc.adherentId, doc.fileUrl);
+      }
+    }
 
     // ── TRIP-007 : les coordonnées (téléphone) ne sont incluses QUE si
     // l'utilisateur actuel est lui-même impliqué dans CE véhicule précis
@@ -172,19 +194,18 @@ export class DeplacementsService {
         contraintes: v.contraintes,
         conducteurNom: `${v.conducteur.firstName} ${v.conducteur.lastName}`,
         conducteurTelephone: estImplique ? v.conducteur.phone : null,
-      passagers: v.passagers.map((p) => ({
-  id: p.id,
-  adherentId: p.adherentId,
-  nom: `${p.adherent.firstName} ${p.adherent.lastName}`,
-  isMinor: p.adherent.isMinor,
-  autorisationOk: p.autorisationOk,
-  telephone: estImplique ? p.adherent.telephone : null,
-  photoUrl: photoParAdherent.get(p.adherentId) ?? null,
-})),
+        passagers: v.passagers.map((p) => ({
+          id: p.id,
+          adherentId: p.adherentId,
+          nom: `${p.adherent.firstName} ${p.adherent.lastName}`,
+          isMinor: p.adherent.isMinor,
+          autorisationOk: p.autorisationOk,
+          telephone: estImplique ? p.adherent.telephone : null,
+          photoUrl: photoParAdherent.get(p.adherentId) ?? null,
+        })),
       };
     });
   }
-
   // ── TRIP-003 : Affecte un passager à un véhicule ─────────────────────
   async affecterPassager(vehiculeId: string, dto: AffecterPassagerDto, currentUser: CurrentUser) {
     const vehicule = await this.prisma.vehiculeCovoiturage.findUnique({
