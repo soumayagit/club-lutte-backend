@@ -172,12 +172,15 @@ export class DeplacementsService {
         contraintes: v.contraintes,
         conducteurNom: `${v.conducteur.firstName} ${v.conducteur.lastName}`,
         conducteurTelephone: estImplique ? v.conducteur.phone : null,
-        passagers: v.passagers.map((p) => ({
-          adherentId: p.adherentId,
-          nom: `${p.adherent.firstName} ${p.adherent.lastName}`,
-          autorisationOk: p.autorisationOk,
-          telephone: estImplique ? p.adherent.telephone : null,
-        })),
+      passagers: v.passagers.map((p) => ({
+  id: p.id,
+  adherentId: p.adherentId,
+  nom: `${p.adherent.firstName} ${p.adherent.lastName}`,
+  isMinor: p.adherent.isMinor,
+  autorisationOk: p.autorisationOk,
+  telephone: estImplique ? p.adherent.telephone : null,
+  photoUrl: photoParAdherent.get(p.adherentId) ?? null,
+})),
       };
     });
   }
